@@ -112,6 +112,9 @@ async function getPrice(
   tokenAddress: string,
   currency: string = "usd"
 ): Promise<number> {
+  chain = chain.toLowerCase();
+  tokenAddress = tokenAddress.toLowerCase();
+
   const url = `https://api.coingecko.com/api/v3/simple/token_price/${chain}?contract_addresses=${tokenAddress}&vs_currencies=${currency}`;
 
   // interface Result {
@@ -121,7 +124,15 @@ async function getPrice(
   return request(url)
     .then(JSON.parse)
     .then((value: any): number => {
-      return value[tokenAddress][currency];
+      if (
+        Object.hasOwnProperty.call(value, tokenAddress) &&
+        Object.hasOwnProperty.call(value[tokenAddress], currency)
+      ) {
+        return value[tokenAddress][currency];
+      } else {
+        const body = JSON.stringify(value);
+        console.error(`bad response: url=${url} body=${body}`);
+      }
     });
 }
 

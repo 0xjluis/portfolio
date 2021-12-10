@@ -105,6 +105,8 @@ function getPrice(chain, tokenAddress, currency) {
     return __awaiter(this, void 0, void 0, function () {
         var url;
         return __generator(this, function (_a) {
+            chain = chain.toLowerCase();
+            tokenAddress = tokenAddress.toLowerCase();
             url = "https://api.coingecko.com/api/v3/simple/token_price/".concat(chain, "?contract_addresses=").concat(tokenAddress, "&vs_currencies=").concat(currency);
             // interface Result {
             //   [tokenAddress: string]: {usd: number};
@@ -112,7 +114,14 @@ function getPrice(chain, tokenAddress, currency) {
             return [2 /*return*/, request(url)
                     .then(JSON.parse)
                     .then(function (value) {
-                    return value[tokenAddress][currency];
+                    if (Object.hasOwnProperty.call(value, tokenAddress) &&
+                        Object.hasOwnProperty.call(value[tokenAddress], currency)) {
+                        return value[tokenAddress][currency];
+                    }
+                    else {
+                        var body = JSON.stringify(value);
+                        console.error("bad response: url=".concat(url, " body=").concat(body));
+                    }
                 })];
         });
     });
