@@ -272,6 +272,7 @@ function main() {
                         totalPNL += pnl;
                         return {
                             Symbol: element.symbol,
+                            Quantity: round2(element.balance),
                             Price: fmt(element.price),
                             Value: fmt(element.notional),
                             Invested: fmt(element.invested),
