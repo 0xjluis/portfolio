@@ -19,6 +19,7 @@ interface TokenConfig {
   readonly invested: number;
   readonly initial?: number;
   readonly staked?: string;
+  readonly precision?: number;
 }
 
 interface WalletConfig {
@@ -37,6 +38,7 @@ interface Balance {
   readonly balance: number;
   readonly price: number;
   readonly notional: number;
+  readonly precision: number;
 }
 
 // +--------------+
@@ -86,12 +88,12 @@ function makeToken(web3: Web3, address?: string): Contract {
 // | HTTP |
 // +------+
 
-function request<T>(url: string): Promise<T> {
-  type Resolve = (value: T) => void;
+function request(url: string): Promise<string> {
+  type Resolve = (value: string) => void;
   type Reject = (reason?: any) => void;
   return new Promise(function (resolve: Resolve, reject: Reject): void {
     function callback(res: IncomingMessage): void {
-      res.on("data", resolve);
+      res.on("data", (b: Buffer) => resolve(b.toString()));
       res.on("error", reject);
     }
     const req = https.request(url, callback);
@@ -133,8 +135,9 @@ async function getPrice(
         return value[tokenAddress][currency];
       } else {
         const body = JSON.stringify(value);
-        console.error(`bad response: url=${url} body=${body}`);
+        console.error(`getPrice: bad response: url=${url} body=${body}`);
       }
+      return 0;
     });
 }
 
@@ -182,20 +185,23 @@ async function getBalance(
   owner: string,
   token: TokenConfig
 ): Promise<Balance> {
-  // If a token has a staked version, we'd like to use that one.
-  const balance: number =
-    (await getBalanceNorm(web3, owner, token.address)) +
-    (await getBalanceNorm(web3, owner, token.staked));
+  // If a token has a staked version, we'd like to use also that one.
+  let balance: number = await getBalanceNorm(web3, owner, token.address);
+  if (token.staked) {
+    balance += await getBalanceNorm(web3, owner, token.staked);
+  }
   const price = await getPrice(chain, token.address);
   const notional = balance * price;
+
   return {
     chain: chain,
     symbol: token.symbol,
     invested: token.invested,
-    initial: token.initial ? token.initial : balance,
+    initial: token.initial || balance,
     balance: balance,
     price: price,
     notional: notional,
+    precision: token.precision || 2,
   };
 }
 
@@ -247,13 +253,14 @@ async function main() {
 
   // Prepare the portfolio to be pretty-printed and sum a few totals
   // in the same time.
-  const round2 = (x: number): number => {
-    return Math.round(x * 100) / 100;
+  const round = (x: number, precision: number = 2): number => {
+    const d = Math.pow(10, precision);
+    return Math.round(x * d) / d;
   };
 
-  const fmt = (x: number): string => {
+  const fmt = (x: number, precision: number = 2): string => {
     const sign = x < 0 ? "-" : "";
-    const absr = round2(Math.abs(x));
+    const absr = round(Math.abs(x), precision);
     return `${sign}$${absr}`;
   };
 
@@ -262,8 +269,8 @@ async function main() {
   let totalPNL = 0.0;
 
   const pretty = (element: Balance): any => {
-    const pnl = round2(element.notional - element.invested);
-    const roi = round2((100 * pnl) / element.invested);
+    const pnl = round(element.notional - element.invested, 1);
+    const roi = round((100 * pnl) / element.invested, 1);
 
     totalValue += element.notional;
     totalInvested += element.invested;
@@ -271,20 +278,20 @@ async function main() {
 
     return {
       Symbol: element.symbol,
-      Quantity: round2(element.balance),
-      Rewards: round2(element.balance - element.initial),
-      Price: fmt(element.price),
-      Value: fmt(element.notional),
-      Invested: fmt(element.invested),
-      PNL: fmt(pnl),
+      Quantity: round(element.balance, element.precision),
+      Rewards: round(element.balance - element.initial, element.precision),
+      Price: fmt(element.price, 1),
+      Value: fmt(element.notional, 1),
+      Invested: fmt(element.invested, 1),
+      PNL: fmt(pnl, 1),
       ROI: `${roi}%`,
     };
   };
   console.table(xs.map(pretty));
-  console.log(`Total: ${fmt(totalValue)}`);
-  console.log(`Invested: ${fmt(totalInvested)}`);
-  console.log(`PNL: ${fmt(totalPNL)}`);
-  console.log(`ROI: ${round2((100 * totalPNL) / totalInvested)}%`);
+  console.log(`Total: ${fmt(totalValue, 2)}`);
+  console.log(`Invested: ${fmt(totalInvested, 2)}`);
+  console.log(`PNL: ${fmt(totalPNL, 2)}`);
+  console.log(`ROI: ${round((100 * totalPNL) / totalInvested, 2)}%`);
 
   process.exit();
 }

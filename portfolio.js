@@ -83,7 +83,7 @@ function makeToken(web3, address) {
 function request(url) {
     return new Promise(function (resolve, reject) {
         function callback(res) {
-            res.on("data", resolve);
+            res.on("data", function (b) { return resolve(b.toString()); });
             res.on("error", reject);
         }
         var req = https.request(url, callback);
@@ -120,8 +120,9 @@ function getPrice(chain, tokenAddress, currency) {
                     }
                     else {
                         var body = JSON.stringify(value);
-                        console.error("bad response: url=".concat(url, " body=").concat(body));
+                        console.error("getPrice: bad response: url=".concat(url, " body=").concat(body));
                     }
+                    return 0;
                 })];
         });
     });
@@ -176,23 +177,26 @@ function getBalance(web3, chain, owner, token) {
             switch (_b.label) {
                 case 0: return [4 /*yield*/, getBalanceNorm(web3, owner, token.address)];
                 case 1:
-                    _a = (_b.sent());
+                    balance = _b.sent();
+                    if (!token.staked) return [3 /*break*/, 3];
+                    _a = balance;
                     return [4 /*yield*/, getBalanceNorm(web3, owner, token.staked)];
                 case 2:
-                    balance = _a +
-                        (_b.sent());
-                    return [4 /*yield*/, getPrice(chain, token.address)];
-                case 3:
+                    balance = _a + _b.sent();
+                    _b.label = 3;
+                case 3: return [4 /*yield*/, getPrice(chain, token.address)];
+                case 4:
                     price = _b.sent();
                     notional = balance * price;
                     return [2 /*return*/, {
                             chain: chain,
                             symbol: token.symbol,
                             invested: token.invested,
-                            initial: token.initial ? token.initial : balance,
+                            initial: token.initial || balance,
                             balance: balance,
                             price: price,
-                            notional: notional
+                            notional: notional,
+                            precision: token.precision || 2
                         }];
             }
         });
@@ -245,7 +249,7 @@ function getPortfolio(config) {
 }
 function main() {
     return __awaiter(this, void 0, void 0, function () {
-        var config, xs, round2, fmt, totalInvested, totalValue, totalPNL, pretty;
+        var config, xs, round, fmt, totalInvested, totalValue, totalPNL, pretty;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -255,39 +259,42 @@ function main() {
                     return [4 /*yield*/, getPortfolio(config)];
                 case 1:
                     xs = _a.sent();
-                    round2 = function (x) {
-                        return Math.round(x * 100) / 100;
+                    round = function (x, precision) {
+                        if (precision === void 0) { precision = 2; }
+                        var d = Math.pow(10, precision);
+                        return Math.round(x * d) / d;
                     };
-                    fmt = function (x) {
+                    fmt = function (x, precision) {
+                        if (precision === void 0) { precision = 2; }
                         var sign = x < 0 ? "-" : "";
-                        var absr = round2(Math.abs(x));
+                        var absr = round(Math.abs(x), precision);
                         return "".concat(sign, "$").concat(absr);
                     };
                     totalInvested = 0.0;
                     totalValue = 0.0;
                     totalPNL = 0.0;
                     pretty = function (element) {
-                        var pnl = round2(element.notional - element.invested);
-                        var roi = round2((100 * pnl) / element.invested);
+                        var pnl = round(element.notional - element.invested, 1);
+                        var roi = round((100 * pnl) / element.invested, 1);
                         totalValue += element.notional;
                         totalInvested += element.invested;
                         totalPNL += pnl;
                         return {
                             Symbol: element.symbol,
-                            Quantity: round2(element.balance),
-                            Rewards: round2(element.balance - element.initial),
-                            Price: fmt(element.price),
-                            Value: fmt(element.notional),
-                            Invested: fmt(element.invested),
-                            PNL: fmt(pnl),
+                            Quantity: round(element.balance, element.precision),
+                            Rewards: round(element.balance - element.initial, element.precision),
+                            Price: fmt(element.price, 1),
+                            Value: fmt(element.notional, 1),
+                            Invested: fmt(element.invested, 1),
+                            PNL: fmt(pnl, 1),
                             ROI: "".concat(roi, "%")
                         };
                     };
                     console.table(xs.map(pretty));
-                    console.log("Total: ".concat(fmt(totalValue)));
-                    console.log("Invested: ".concat(fmt(totalInvested)));
-                    console.log("PNL: ".concat(fmt(totalPNL)));
-                    console.log("ROI: ".concat(round2((100 * totalPNL) / totalInvested), "%"));
+                    console.log("Total: ".concat(fmt(totalValue, 2)));
+                    console.log("Invested: ".concat(fmt(totalInvested, 2)));
+                    console.log("PNL: ".concat(fmt(totalPNL, 2)));
+                    console.log("ROI: ".concat(round((100 * totalPNL) / totalInvested, 2), "%"));
                     process.exit();
                     return [2 /*return*/];
             }
