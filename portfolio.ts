@@ -15,13 +15,13 @@ const Web3_ = require("web3");
 
 interface TokenConfig {
   readonly symbol: string;
-  readonly invested: number;
   readonly address: string;
+  readonly invested: number;
   readonly staked?: string;
 }
 
 interface WalletConfig {
-  [wallet: string]: TokenConfig[];
+  [wallet: string]: readonly TokenConfig[];
 }
 
 interface Config {
@@ -29,12 +29,12 @@ interface Config {
 }
 
 interface Balance {
-  chain: string;
-  symbol: string;
-  invested: number;
-  balance: number;
-  price: number;
-  notional: number;
+  readonly chain: string;
+  readonly symbol: string;
+  readonly invested: number;
+  readonly balance: number;
+  readonly price: number;
+  readonly notional: number;
 }
 
 // +--------------+
@@ -216,7 +216,7 @@ async function getPortfolio(config: Config): Promise<Balance[]> {
         if (Object.hasOwnProperty.call(walletConfig, wallet)) {
           //
           // For each token in this wallet, add a new promise to the `xs` array.
-          const tokenConfigs: TokenConfig[] = walletConfig[wallet];
+          const tokenConfigs: readonly TokenConfig[] = walletConfig[wallet];
           const f = async function (token: TokenConfig): Promise<Balance> {
             return getBalance(web3, chain, wallet, token);
           };
