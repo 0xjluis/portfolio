@@ -12,17 +12,20 @@ Track your Ethereum/web3 portfolio.
         "0xWALLET_ONE": [
             {
                 "symbol": "COMP",
+                "address": "0xc00e94Cb662C3520282E6f5717214004A7f26888",
                 "invested": 10000,
-                "address": "0xc00e94Cb662C3520282E6f5717214004A7f26888"
+                "precision": 5
             }
         ],
 
         "0xWALLET_TWO": [
             {
                 "symbol": "OHM",
-                "invested": 20000,
                 "address": "0x383518188c0c6d7730d91b2c03a03c837814a899",
-                "staked": "0x04f2694c8fcee23e8fd0dfea1d4f5bb8c352111f"
+                "invested": 20000,
+                "staked": "0x04f2694c8fcee23e8fd0dfea1d4f5bb8c352111f",
+                "initial": 30,
+                "precision": 1
             }
         ]
     },
@@ -31,8 +34,8 @@ Track your Ethereum/web3 portfolio.
         "0xWALLET_THREE": [
             {
                 "symbol": "WAVAX",
-                "invested": 30000,
-                "address": "0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7"
+                "address": "0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7",
+                "invested": 30000
             }
         ]
     },
