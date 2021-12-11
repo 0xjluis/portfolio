@@ -37,6 +37,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 exports.__esModule = true;
+exports.getPortfolio = exports.readConfig = void 0;
 var fs = require("fs");
 var https = require("https");
 var dotenv_1 = require("dotenv");
@@ -49,6 +50,7 @@ function readConfig() {
     var obj = JSON.parse(buf.toString());
     return obj;
 }
+exports.readConfig = readConfig;
 /**
  * Return a configured Web3 instance.
  *
@@ -145,17 +147,29 @@ function getBalanceNorm(web3, owner, tokenAddress) {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    if (!tokenAddress) return [3 /*break*/, 3];
                     contract = makeToken(web3, tokenAddress);
-                    return [4 /*yield*/, contract.methods.balanceOf(owner).call()];
+                    return [4 /*yield*/, contract.methods
+                            .balanceOf(owner)
+                            .call()["catch"](function (error) {
+                            var _a;
+                            var provider = (_a = web3.currentProvider) === null || _a === void 0 ? void 0 : _a.toString();
+                            console.error("balanceOf failed: provider=".concat(provider, " owner=").concat(owner, " token=").concat(tokenAddress, " error=").concat(error));
+                            return 0;
+                        })];
                 case 1:
                     balance = _a.sent();
-                    return [4 /*yield*/, contract.methods.decimals().call()];
+                    return [4 /*yield*/, contract.methods
+                            .decimals()
+                            .call()["catch"](function (error) {
+                            var _a;
+                            var provider = (_a = web3.currentProvider) === null || _a === void 0 ? void 0 : _a.toString();
+                            console.error("decimals failed: provider=".concat(provider, " owner=").concat(owner, " token=").concat(tokenAddress, " error=").concat(error));
+                            return 0;
+                        })];
                 case 2:
                     decimals = _a.sent();
                     norm = balance / Math.pow(10, decimals);
                     return [2 /*return*/, norm];
-                case 3: return [2 /*return*/, 0];
             }
         });
     });
@@ -247,6 +261,7 @@ function getPortfolio(config) {
         });
     });
 }
+exports.getPortfolio = getPortfolio;
 function main() {
     return __awaiter(this, void 0, void 0, function () {
         var config, xs, round, fmt, totalInvested, totalValue, totalPNL, pretty;
@@ -301,4 +316,4 @@ function main() {
         });
     });
 }
-main();
+// main();

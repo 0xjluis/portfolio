@@ -26,7 +26,7 @@ interface WalletConfig {
   [wallet: string]: readonly TokenConfig[];
 }
 
-interface Config {
+export interface Config {
   [chain: string]: WalletConfig;
 }
 
@@ -45,7 +45,7 @@ interface Balance {
 // | Constructors |
 // +--------------+
 
-function readConfig(): Config {
+export function readConfig(): Config {
   const buf = fs.readFileSync("config.json", { encoding: "ascii" });
   const obj = JSON.parse(buf.toString());
   return obj;
@@ -159,14 +159,32 @@ async function getBalanceNorm(
   owner: string,
   tokenAddress: string
 ): Promise<number> {
-  if (tokenAddress) {
-    const contract: Contract = makeToken(web3, tokenAddress);
-    const balance: number = await contract.methods.balanceOf(owner).call();
-    const decimals: number = await contract.methods.decimals().call();
-    const norm: number = balance / Math.pow(10, decimals);
-    return norm;
-  }
-  return 0;
+  const contract: Contract = makeToken(web3, tokenAddress);
+
+  const balance: number = await contract.methods
+    .balanceOf(owner)
+    .call()
+    .catch((error?: any) => {
+      const provider: string|undefined = web3.currentProvider?.toString();
+      console.error(
+        `balanceOf failed: provider=${provider} owner=${owner} token=${tokenAddress} error=${error}`
+      );
+      return 0;
+    });
+
+  const decimals: number = await contract.methods
+    .decimals()
+    .call()
+    .catch((error?: any) => {
+      const provider: string|undefined = web3.currentProvider?.toString();
+      console.error(
+        `decimals failed: provider=${provider} owner=${owner} token=${tokenAddress} error=${error}`
+      );
+      return 0;
+    });
+
+  const norm: number = balance / Math.pow(10, decimals);
+  return norm;
 }
 
 /**
@@ -209,7 +227,7 @@ async function getBalance(
 // | Main |
 // +------+
 
-async function getPortfolio(config: Config): Promise<Balance[]> {
+export async function getPortfolio(config: Config): Promise<Balance[]> {
   // An array of promises, which we later convert to a promise of an
   // array.
   let xs: Promise<Balance>[] = new Array<Promise<Balance>>();
@@ -296,4 +314,4 @@ async function main() {
   process.exit();
 }
 
-main();
+// main();
