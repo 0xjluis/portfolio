@@ -47,12 +47,12 @@ Track your portfolio.
 }
 ```
 
-2. Set environment variables or use .env
+2. Set needed environment variables or use the .env file.
 ```bash
 WEB3_INFURA_PROJECT_ID=...
 ```
 
-3. Start
+3. Start.
 ```bash
 $ npm run start
 ```
