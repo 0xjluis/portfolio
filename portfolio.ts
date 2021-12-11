@@ -17,8 +17,8 @@ interface TokenConfig {
   readonly symbol: string;
   readonly address: string;
   readonly invested: number;
-  readonly initial?: number;
   readonly staked?: string;
+  readonly initial?: number;
   readonly precision?: number;
 }
 
