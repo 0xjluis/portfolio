@@ -4,8 +4,8 @@
   "description": "Track your on-chain portfolio.",
   "main": "portfolio.js",
   "scripts": {
-    "start": "npx tsc portfolio.ts && node portfolio.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "compile": "npx tsc portfolio.ts",
+    "start": "node portfolio.js"
   },
   "repository": {
     "type": "git",
