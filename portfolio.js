@@ -92,8 +92,8 @@ function request(url) {
     });
 }
 /**
- * getPrice returns a token's price in the given target currency.
- * Performs a single request to CoinGecko's API.
+ * getPrice returns a token's price in the given target
+ * currency. Performs a single request to CoinGecko's API.
  *
  * @param chain Which chain this token lives on.  Passed directly to CoinGecko's API.
  * @param tokenAddress Address of the token contract.
@@ -160,8 +160,8 @@ function getBalanceNorm(web3, owner, tokenAddress) {
     });
 }
 /**
- * getBalance returns the staked + unstaked
- * (normalized) balance of an asset.
+ * getBalance returns the staked + unstaked (normalized) balance of an
+ * asset.
  *
  * @param web3
  * @param chain
@@ -267,6 +267,7 @@ function main() {
                     totalPNL = 0.0;
                     pretty = function (element) {
                         var pnl = round2(element.notional - element.invested);
+                        var roi = round2(100 * pnl / element.invested);
                         totalValue += element.notional;
                         totalInvested += element.invested;
                         totalPNL += pnl;
@@ -276,7 +277,8 @@ function main() {
                             Price: fmt(element.price),
                             Value: fmt(element.notional),
                             Invested: fmt(element.invested),
-                            PNL: fmt(pnl)
+                            PNL: fmt(pnl),
+                            ROI: "".concat(roi, "%")
                         };
                     };
                     console.table(xs.map(pretty));

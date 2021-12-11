@@ -258,6 +258,7 @@ async function main() {
 
   const pretty = (element: Balance): any => {
     const pnl = round2(element.notional - element.invested);
+    const roi = round2(100 * pnl / element.invested);
 
     totalValue += element.notional;
     totalInvested += element.invested;
@@ -270,6 +271,7 @@ async function main() {
       Value: fmt(element.notional),
       Invested: fmt(element.invested),
       PNL: fmt(pnl),
+      ROI: `${roi}%`,
     };
   };
   console.table(xs.map(pretty));
