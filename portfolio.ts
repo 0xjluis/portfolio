@@ -17,6 +17,7 @@ interface TokenConfig {
   readonly symbol: string;
   readonly address: string;
   readonly invested: number;
+  readonly initial?: number;
   readonly staked?: string;
 }
 
@@ -32,6 +33,7 @@ interface Balance {
   readonly chain: string;
   readonly symbol: string;
   readonly invested: number;
+  readonly initial: number;
   readonly balance: number;
   readonly price: number;
   readonly notional: number;
@@ -141,7 +143,7 @@ async function getPrice(
 // +------+
 
 /**
- * getBalanceNorm returns normalized (balance/10^decimals)
+ * getBalanceNorm returns the normalized (balance/10^decimals)
  * balance of an asset.
  *
  * @param web3
@@ -190,6 +192,7 @@ async function getBalance(
     chain: chain,
     symbol: token.symbol,
     invested: token.invested,
+    initial: token.initial ? token.initial : balance,
     balance: balance,
     price: price,
     notional: notional,
@@ -269,6 +272,7 @@ async function main() {
     return {
       Symbol: element.symbol,
       Quantity: round2(element.balance),
+      Rewards: round2(element.balance - element.initial),
       Price: fmt(element.price),
       Value: fmt(element.notional),
       Invested: fmt(element.invested),

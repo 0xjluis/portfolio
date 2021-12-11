@@ -130,7 +130,7 @@ function getPrice(chain, tokenAddress, currency) {
 // | web3 |
 // +------+
 /**
- * getBalanceNorm returns normalized (balance/10^decimals)
+ * getBalanceNorm returns the normalized (balance/10^decimals)
  * balance of an asset.
  *
  * @param web3
@@ -189,6 +189,7 @@ function getBalance(web3, chain, owner, token) {
                             chain: chain,
                             symbol: token.symbol,
                             invested: token.invested,
+                            initial: token.initial ? token.initial : balance,
                             balance: balance,
                             price: price,
                             notional: notional
@@ -274,6 +275,7 @@ function main() {
                         return {
                             Symbol: element.symbol,
                             Quantity: round2(element.balance),
+                            Rewards: round2(element.balance - element.initial),
                             Price: fmt(element.price),
                             Value: fmt(element.notional),
                             Invested: fmt(element.invested),
