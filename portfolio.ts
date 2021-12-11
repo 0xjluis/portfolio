@@ -278,6 +278,7 @@ async function main() {
   console.log(`Total: ${fmt(totalValue)}`);
   console.log(`Invested: ${fmt(totalInvested)}`);
   console.log(`PNL: ${fmt(totalPNL)}`);
+  console.log(`ROI: ${round2(100 * totalPNL / totalInvested)}%`);
 
   process.exit();
 }

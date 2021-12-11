@@ -285,6 +285,7 @@ function main() {
                     console.log("Total: ".concat(fmt(totalValue)));
                     console.log("Invested: ".concat(fmt(totalInvested)));
                     console.log("PNL: ".concat(fmt(totalPNL)));
+                    console.log("ROI: ".concat(round2(100 * totalPNL / totalInvested), "%"));
                     process.exit();
                     return [2 /*return*/];
             }
