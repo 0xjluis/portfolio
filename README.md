@@ -1,6 +1,6 @@
 # Portfolio
 
-Track your portfolio.
+Track your Ethereum/web3 portfolio.
 
 ### Usage
 
