@@ -236,8 +236,8 @@ function getPortfolio(config) {
             for (chain in config) {
                 _loop_1(chain);
             }
-            // Finally, convert `xs`, which is an array of promises,
-            // to a promise of an array with all the values evaluated.
+            // Finally, convert `xs`, which is an array of promises, to a
+            // promise of an array with all the values resolved.
             return [2 /*return*/, Promise.all(xs)];
         });
     });
@@ -267,7 +267,7 @@ function main() {
                     totalPNL = 0.0;
                     pretty = function (element) {
                         var pnl = round2(element.notional - element.invested);
-                        var roi = round2(100 * pnl / element.invested);
+                        var roi = round2((100 * pnl) / element.invested);
                         totalValue += element.notional;
                         totalInvested += element.invested;
                         totalPNL += pnl;
@@ -285,7 +285,7 @@ function main() {
                     console.log("Total: ".concat(fmt(totalValue)));
                     console.log("Invested: ".concat(fmt(totalInvested)));
                     console.log("PNL: ".concat(fmt(totalPNL)));
-                    console.log("ROI: ".concat(round2(100 * totalPNL / totalInvested), "%"));
+                    console.log("ROI: ".concat(round2((100 * totalPNL) / totalInvested), "%"));
                     process.exit();
                     return [2 /*return*/];
             }

@@ -84,8 +84,8 @@ function makeToken(web3: Web3, address?: string): Contract {
 // | HTTP |
 // +------+
 
-function request(url: string): Promise<any> {
-  type Resolve = (value: unknown) => void;
+function request<T>(url: string): Promise<T> {
+  type Resolve = (value: T) => void;
   type Reject = (reason?: any) => void;
   return new Promise(function (resolve: Resolve, reject: Reject): void {
     function callback(res: IncomingMessage): void {
@@ -201,7 +201,8 @@ async function getBalance(
 // +------+
 
 async function getPortfolio(config: Config): Promise<Balance[]> {
-  // xs is an array of promises, which we then convert to a promise of an array.
+  // An array of promises, which we later convert to a promise of an
+  // array.
   let xs: Promise<Balance>[] = new Array<Promise<Balance>>();
 
   // For each chain.
@@ -226,8 +227,8 @@ async function getPortfolio(config: Config): Promise<Balance[]> {
     }
   }
 
-  // Finally, convert `xs`, which is an array of promises,
-  // to a promise of an array with all the values evaluated.
+  // Finally, convert `xs`, which is an array of promises, to a
+  // promise of an array with all the values resolved.
   return Promise.all(xs);
 }
 
@@ -241,7 +242,8 @@ async function main() {
   // Fetch portfolio.
   const xs = await getPortfolio(config);
 
-  // Pretty-print the portfolio and sum its total value in the same time.
+  // Prepare the portfolio to be pretty-printed and sum a few totals
+  // in the same time.
   const round2 = (x: number): number => {
     return Math.round(x * 100) / 100;
   };
@@ -258,7 +260,7 @@ async function main() {
 
   const pretty = (element: Balance): any => {
     const pnl = round2(element.notional - element.invested);
-    const roi = round2(100 * pnl / element.invested);
+    const roi = round2((100 * pnl) / element.invested);
 
     totalValue += element.notional;
     totalInvested += element.invested;
@@ -278,7 +280,7 @@ async function main() {
   console.log(`Total: ${fmt(totalValue)}`);
   console.log(`Invested: ${fmt(totalInvested)}`);
   console.log(`PNL: ${fmt(totalPNL)}`);
-  console.log(`ROI: ${round2(100 * totalPNL / totalInvested)}%`);
+  console.log(`ROI: ${round2((100 * totalPNL) / totalInvested)}%`);
 
   process.exit();
 }
