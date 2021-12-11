@@ -99,8 +99,8 @@ function request(url: string): Promise<any> {
 }
 
 /**
- * getPrice returns a token's price in the given target currency.
- * Performs a single request to CoinGecko's API.
+ * getPrice returns a token's price in the given target
+ * currency. Performs a single request to CoinGecko's API.
  *
  * @param chain Which chain this token lives on.  Passed directly to CoinGecko's API.
  * @param tokenAddress Address of the token contract.
@@ -165,8 +165,8 @@ async function getBalanceNorm(
 }
 
 /**
- * getBalance returns the staked + unstaked
- * (normalized) balance of an asset.
+ * getBalance returns the staked + unstaked (normalized) balance of an
+ * asset.
  *
  * @param web3
  * @param chain
