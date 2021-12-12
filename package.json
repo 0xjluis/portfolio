@@ -4,9 +4,10 @@
   "description": "Track your on-chain portfolio.",
   "main": "portfolio.js",
   "scripts": {
+    "cli": "node cmd/cli.js",
     "compile": "npx tsc **/*.ts",
     "lint": "npx eslint **/*.ts",
-    "cli": "node cmd/cli.js"
+    "upgrade": "npm install --no-save npm-check-updates && npx install"
   },
   "repository": {
     "type": "git",

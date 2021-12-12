@@ -97,6 +97,29 @@ function request(url: string): Promise<Buffer> {
     });
 }
 
+async function getDecimals(
+    web3: Web3,
+    chain: string,
+    tokenAddress: string
+): Promise<number> {
+    // TODO: Check cache.
+    const contract: Contract = makeToken(web3, tokenAddress);
+    return (
+        contract.methods
+            .decimals()
+            .call()
+            //eslint-disable-next-line @typescript-eslint/no-explicit-any
+            .catch((reason?: any): number => {
+                const provider: string | undefined =
+                    web3.currentProvider?.toString();
+                console.error(
+                    `decimals failed: chain=${chain} provider=${provider} token=${tokenAddress} reason=${reason}`
+                );
+                return 0;
+            })
+    );
+}
+
 /**
  * getPrice returns a token's price in the given target
  * currency. Performs a single request to CoinGecko's API.
@@ -153,6 +176,7 @@ async function getPrice(
  */
 async function getBalanceNorm(
     web3: Web3,
+    chain: string,
     owner: string,
     tokenAddress: string
 ): Promise<number> {
@@ -169,19 +193,7 @@ async function getBalanceNorm(
             return 0;
         });
 
-    const decimals: number = await contract.methods
-        .decimals()
-        .call()
-        //eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .catch((reason?: any): number => {
-            const provider: string | undefined =
-                web3.currentProvider?.toString();
-            console.error(
-                `decimals failed: provider=${provider} owner=${owner} token=${tokenAddress} reason=${reason}`
-            );
-            return 0;
-        });
-
+    const decimals = await getDecimals(web3, chain, tokenAddress);
     const norm: number = balance / Math.pow(10, decimals);
     return norm;
 }
@@ -203,9 +215,9 @@ async function getBalance(
     token: TokenConfig
 ): Promise<Balance> {
     // If a token has a staked version, we'd like to use also that one.
-    let balance: number = await getBalanceNorm(web3, owner, token.address);
+    let balance: number = await getBalanceNorm(web3, chain, owner, token.address);
     if (token.staked) {
-        balance += await getBalanceNorm(web3, owner, token.staked);
+        balance += await getBalanceNorm(web3, chain, owner, token.staked);
     }
     const price = await getPrice(chain, token.address);
     const notional = balance * price;
