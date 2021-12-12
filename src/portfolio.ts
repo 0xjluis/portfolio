@@ -45,12 +45,6 @@ export interface Balance {
 // | Constructors |
 // +--------------+
 
-export function readConfig(): Config {
-    const buf = fs.readFileSync("config.json", { encoding: "ascii" });
-    const obj = JSON.parse(buf.toString());
-    return obj;
-}
-
 /**
  * Return a configured Web3 instance.
  *
@@ -228,9 +222,15 @@ async function getBalance(
     };
 }
 
-// +------+
-// | Main |
-// +------+
+// +--------+
+// | Public |
+// +--------+
+
+export function readConfig(): Config {
+    const buf = fs.readFileSync("config.json", { encoding: "ascii" });
+    const obj = JSON.parse(buf.toString());
+    return obj;
+}
 
 export async function getPortfolio(config: Config): Promise<Balance[]> {
     // An array of promises, which we later convert to a promise of an

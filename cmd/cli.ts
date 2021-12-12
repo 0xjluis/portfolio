@@ -28,7 +28,7 @@ async function main() {
     let totalValue = 0.0;
     let totalPNL = 0.0;
 
-    const pretty = (element: Balance): {
+    interface PrettyRow {
         Symbol: string,
         Quantity: number,
         Rewards: number,
@@ -37,7 +37,9 @@ async function main() {
         Invested: string,
         PNL: string,
         ROI: string,
-    } => {
+    }
+
+    const pretty = (element: Balance): PrettyRow => {
         const pnl = round(element.notional - element.invested, 1);
         const roi = round((100 * pnl) / element.invested, 1);
 

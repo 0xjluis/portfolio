@@ -45,12 +45,6 @@ var Web3_ = require("web3");
 // +--------------+
 // | Constructors |
 // +--------------+
-function readConfig() {
-    var buf = fs.readFileSync("config.json", { encoding: "ascii" });
-    var obj = JSON.parse(buf.toString());
-    return obj;
-}
-exports.readConfig = readConfig;
 /**
  * Return a configured Web3 instance.
  *
@@ -216,9 +210,15 @@ function getBalance(web3, chain, owner, token) {
         });
     });
 }
-// +------+
-// | Main |
-// +------+
+// +--------+
+// | Public |
+// +--------+
+function readConfig() {
+    var buf = fs.readFileSync("config.json", { encoding: "ascii" });
+    var obj = JSON.parse(buf.toString());
+    return obj;
+}
+exports.readConfig = readConfig;
 function getPortfolio(config) {
     return __awaiter(this, void 0, void 0, function () {
         var xs, _loop_1, chain;
