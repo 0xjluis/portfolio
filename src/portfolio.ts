@@ -6,6 +6,7 @@ import Web3 from "web3";
 import { Contract } from "web3-eth-contract";
 import { IncomingMessage } from "http";
 
+//eslint-disable-next-line @typescript-eslint/no-var-requires
 const Web3_ = require("web3");
 
 // +------------+
