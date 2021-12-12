@@ -40,7 +40,6 @@ exports.__esModule = true;
 exports.getPortfolio = exports.readConfig = void 0;
 var fs = require("fs");
 var https = require("https");
-var dotenv_1 = require("dotenv");
 var Web3_ = require("web3");
 // +--------------+
 // | Constructors |
@@ -85,7 +84,7 @@ function makeToken(web3, address) {
 function request(url) {
     return new Promise(function (resolve, reject) {
         function callback(res) {
-            res.on("data", function (b) { return resolve(b.toString()); });
+            res.on("data", resolve);
             res.on("error", reject);
         }
         var req = https.request(url, callback);
@@ -114,7 +113,7 @@ function getPrice(chain, tokenAddress, currency) {
             //   [tokenAddress: string]: {usd: number};
             // }
             return [2 /*return*/, request(url)
-                    .then(JSON.parse)
+                    .then(function (x) { return JSON.parse(x.toString()); })
                     .then(function (value) {
                     if (Object.hasOwnProperty.call(value, tokenAddress) &&
                         Object.hasOwnProperty.call(value[tokenAddress], currency)) {
@@ -152,7 +151,7 @@ function getBalanceNorm(web3, owner, tokenAddress) {
                             .balanceOf(owner)
                             .call()["catch"](function (error) {
                             var _a;
-                            var provider = (_a = web3.currentProvider) === null || _a === void 0 ? void 0 : _a.toString();
+                            var provider = ((_a = web3.currentProvider) === null || _a === void 0 ? void 0 : _a.toString()) || "";
                             console.error("balanceOf failed: provider=".concat(provider, " owner=").concat(owner, " token=").concat(tokenAddress, " error=").concat(error));
                             return 0;
                         })];
@@ -262,58 +261,3 @@ function getPortfolio(config) {
     });
 }
 exports.getPortfolio = getPortfolio;
-function main() {
-    return __awaiter(this, void 0, void 0, function () {
-        var config, xs, round, fmt, totalInvested, totalValue, totalPNL, pretty;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    // Load .env.
-                    (0, dotenv_1.config)();
-                    config = readConfig();
-                    return [4 /*yield*/, getPortfolio(config)];
-                case 1:
-                    xs = _a.sent();
-                    round = function (x, precision) {
-                        if (precision === void 0) { precision = 2; }
-                        var d = Math.pow(10, precision);
-                        return Math.round(x * d) / d;
-                    };
-                    fmt = function (x, precision) {
-                        if (precision === void 0) { precision = 2; }
-                        var sign = x < 0 ? "-" : "";
-                        var absr = round(Math.abs(x), precision);
-                        return "".concat(sign, "$").concat(absr);
-                    };
-                    totalInvested = 0.0;
-                    totalValue = 0.0;
-                    totalPNL = 0.0;
-                    pretty = function (element) {
-                        var pnl = round(element.notional - element.invested, 1);
-                        var roi = round((100 * pnl) / element.invested, 1);
-                        totalValue += element.notional;
-                        totalInvested += element.invested;
-                        totalPNL += pnl;
-                        return {
-                            Symbol: element.symbol,
-                            Quantity: round(element.balance, element.precision),
-                            Rewards: round(element.balance - element.initial, element.precision),
-                            Price: fmt(element.price, 1),
-                            Value: fmt(element.notional, 1),
-                            Invested: fmt(element.invested, 1),
-                            PNL: fmt(pnl, 1),
-                            ROI: "".concat(roi, "%")
-                        };
-                    };
-                    console.table(xs.map(pretty));
-                    console.log("Total: ".concat(fmt(totalValue, 2)));
-                    console.log("Invested: ".concat(fmt(totalInvested, 2)));
-                    console.log("PNL: ".concat(fmt(totalPNL, 2)));
-                    console.log("ROI: ".concat(round((100 * totalPNL) / totalInvested, 2), "%"));
-                    process.exit();
-                    return [2 /*return*/];
-            }
-        });
-    });
-}
-// main();
