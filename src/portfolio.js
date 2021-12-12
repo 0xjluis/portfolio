@@ -40,6 +40,7 @@ exports.__esModule = true;
 exports.getPortfolio = exports.readConfig = void 0;
 var fs = require("fs");
 var https = require("https");
+//eslint-disable-next-line @typescript-eslint/no-var-requires
 var Web3_ = require("web3");
 // +--------------+
 // | Constructors |
@@ -159,10 +160,10 @@ function getBalanceNorm(web3, owner, tokenAddress) {
                     balance = _a.sent();
                     return [4 /*yield*/, contract.methods
                             .decimals()
-                            .call()["catch"](function (error) {
+                            .call()["catch"](function (reason) {
                             var _a;
                             var provider = (_a = web3.currentProvider) === null || _a === void 0 ? void 0 : _a.toString();
-                            console.error("decimals failed: provider=".concat(provider, " owner=").concat(owner, " token=").concat(tokenAddress, " error=").concat(error));
+                            console.error("decimals failed: provider=".concat(provider, " owner=").concat(owner, " token=").concat(tokenAddress, " reason=").concat(reason));
                             return 0;
                         })];
                 case 2:

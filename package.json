@@ -4,8 +4,8 @@
   "description": "Track your on-chain portfolio.",
   "main": "portfolio.js",
   "scripts": {
-    "compile": "npx tsc ./src/*.ts",
-    "lint": "npx eslint src/*.ts",
+    "compile": "npx tsc **/*.ts",
+    "lint": "npx eslint **/*.ts",
     "cli": "node cmd/cli.js"
   },
   "repository": {
