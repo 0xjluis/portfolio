@@ -36,6 +36,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 exports.__esModule = true;
+exports.main = void 0;
 var dotenv_1 = require("dotenv");
 var portfolio_1 = require("../src/portfolio");
 function main() {
@@ -92,4 +93,5 @@ function main() {
         });
     });
 }
+exports.main = main;
 main();

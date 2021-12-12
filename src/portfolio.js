@@ -40,39 +40,8 @@ exports.__esModule = true;
 exports.getPortfolio = exports.readConfig = void 0;
 var fs = require("fs");
 var https = require("https");
-//eslint-disable-next-line @typescript-eslint/no-var-requires
-var Web3_ = require("web3");
-// +--------------+
-// | Constructors |
-// +--------------+
-/**
- * Return a configured Web3 instance.
- *
- * @param chain One of https://api.coingecko.com/api/v3/asset_platforms .
- * @returns
- */
-function makeWeb3(chain) {
-    var id = process.env.WEB3_INFURA_PROJECT_ID;
-    var provider = "https://mainnet.infura.io/v3/".concat(id);
-    if (chain === "avalanche") {
-        provider = "https://api.avax.network/ext/bc/C/rpc";
-    }
-    else if (chain === "binance-smart-chain") {
-        provider = "https://bsc-dataseed.binance.org";
-    }
-    else if (chain === "polygon-pos") {
-        provider = "https://polygon-mainnet.infura.io/v3/".concat(id);
-    }
-    return new Web3_(provider);
-}
-function makeContract(web3, path, address) {
-    var buf = fs.readFileSync(path, { encoding: "ascii" });
-    var abi = JSON.parse(buf.toString());
-    return new web3.eth.Contract(abi, address);
-}
-function makeToken(web3, address) {
-    return makeContract(web3, "interfaces/IERC20.abi", address);
-}
+var help3_1 = require("./help3");
+var decimals_1 = require("./decimals");
 // +------+
 // | HTTP |
 // +------+
@@ -135,13 +104,13 @@ function getPrice(chain, tokenAddress, currency) {
  * @param tokenAddress
  * @returns
  */
-function getBalanceNorm(web3, owner, tokenAddress) {
+function getBalanceNorm(web3, chain, owner, tokenAddress) {
     return __awaiter(this, void 0, void 0, function () {
         var contract, balance, decimals, norm;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    contract = makeToken(web3, tokenAddress);
+                    contract = (0, help3_1.makeToken)(web3, tokenAddress);
                     return [4 /*yield*/, contract.methods
                             .balanceOf(owner)
                             .call()["catch"](function (error) {
@@ -152,14 +121,7 @@ function getBalanceNorm(web3, owner, tokenAddress) {
                         })];
                 case 1:
                     balance = _a.sent();
-                    return [4 /*yield*/, contract.methods
-                            .decimals()
-                            .call()["catch"](function (reason) {
-                            var _a;
-                            var provider = (_a = web3.currentProvider) === null || _a === void 0 ? void 0 : _a.toString();
-                            console.error("decimals failed: provider=".concat(provider, " owner=").concat(owner, " token=").concat(tokenAddress, " reason=").concat(reason));
-                            return 0;
-                        })];
+                    return [4 /*yield*/, (0, decimals_1["default"])(web3, chain, tokenAddress)];
                 case 2:
                     decimals = _a.sent();
                     norm = balance / Math.pow(10, decimals);
@@ -183,12 +145,12 @@ function getBalance(web3, chain, owner, token) {
         var balance, _a, price, notional;
         return __generator(this, function (_b) {
             switch (_b.label) {
-                case 0: return [4 /*yield*/, getBalanceNorm(web3, owner, token.address)];
+                case 0: return [4 /*yield*/, getBalanceNorm(web3, chain, owner, token.address)];
                 case 1:
                     balance = _b.sent();
                     if (!token.staked) return [3 /*break*/, 3];
                     _a = balance;
-                    return [4 /*yield*/, getBalanceNorm(web3, owner, token.staked)];
+                    return [4 /*yield*/, getBalanceNorm(web3, chain, owner, token.staked)];
                 case 2:
                     balance = _a + _b.sent();
                     _b.label = 3;
@@ -226,7 +188,7 @@ function getPortfolio(config) {
             xs = new Array();
             _loop_1 = function (chain) {
                 if (Object.hasOwnProperty.call(config, chain)) {
-                    var web3_1 = makeWeb3(chain);
+                    var web3_1 = (0, help3_1.makeWeb3)(chain);
                     var walletConfig = config[chain];
                     var _loop_2 = function (wallet) {
                         if (Object.hasOwnProperty.call(walletConfig, wallet)) {

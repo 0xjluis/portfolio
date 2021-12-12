@@ -1,7 +1,7 @@
 import { config as dotenvConfig } from "dotenv";
 import { Balance, getPortfolio, readConfig } from "../src/portfolio";
 
-async function main() {
+export async function main() {
     // Load .env.
     dotenvConfig();
 
