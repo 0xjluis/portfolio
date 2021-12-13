@@ -20,26 +20,17 @@ const expectedFilesInDistDir = [
   '404.html',
   'package.json',
   'browserconfig.xml',
+  'webpack.config.js',
 
   'css/', // for directories, a `/` character
   // should be included at the end
-  'css/main.css',
   'css/normalize.css',
-
-  'doc/',
-  'doc/TOC.md',
-  'doc/css.md',
-  'doc/extend.md',
-  'doc/faq.md',
-  'doc/html.md',
-  'doc/js.md',
-  'doc/misc.md',
-  'doc/usage.md',
+  'css/style.css',
 
   'favicon.ico',
-  'humans.txt',
 
   'icon.png',
+  'icon.svg',
 
   'img/',
   'img/.gitignore',
@@ -47,8 +38,7 @@ const expectedFilesInDistDir = [
   'index.html',
 
   'js/',
-  'js/main.js',
-  'js/plugins.js',
+  'js/app.js',
   'js/vendor/',
   `js/vendor/modernizr-${pkg.devDependencies.modernizr}.min.js`,
 

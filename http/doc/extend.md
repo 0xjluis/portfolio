@@ -9,7 +9,6 @@ everything fits with everyone's needs.
 
 * [App Stores](#app-stores)
 * [DNS prefetching](#dns-prefetching)
-* [Google Universal Analytics](#google-universal-analytics)
 * [Internet Explorer](#internet-explorer)
 * [Miscellaneous](#miscellaneous)
 * [News Feeds](#news-feeds)
@@ -17,6 +16,7 @@ everything fits with everyone's needs.
 * [Social Networks](#social-networks)
 * [URLs](#urls)
 * [Web Apps](#web-apps)
+* [humans.txt](#humanstxt)
 * [security.txt](#security.txt)
 
 ## App Stores
@@ -25,7 +25,7 @@ everything fits with everyone's needs.
 
 Stop bothering everyone with gross modals advertising your entry in the App
 Store. Including the following [meta
-tag](https://developer.apple.com/library/archive/documentation/AppleApplications/Reference/SafariWebContent/PromotingAppswithAppBanners/PromotingAppswithAppBanners.html)
+tag](https://developer.apple.com/documentation/webkit/promoting_apps_with_smart_app_banners)
 will unobtrusively give the user the option to download your iOS app, or open it
 with some data about the user's current state on the website.
 
@@ -72,119 +72,12 @@ Charset](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/meta#attr-cha
 element (which should go right at the top of the `head`), so the browser can act
 on them ASAP.
 
-#### Common Prefetch Links
-
-Amazon S3:
-
-```html
-<link rel="dns-prefetch" href="//s3.amazonaws.com">
-```
-
-Google APIs:
-
-```html
-<link rel="dns-prefetch" href="https://ajax.googleapis.com">
-```
-
-Microsoft Ajax Content Delivery Network:
-
-```html
-<link rel="dns-prefetch" href="//ajax.microsoft.com">
-<link rel="dns-prefetch" href="//ajax.aspnetcdn.com">
-```
 
 ### Further reading about DNS prefetching
 
 * https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-DNS-Prefetch-Control
 * https://dev.chromium.org/developers/design-documents/dns-prefetching
-* https://docs.microsoft.com/en-us/archive/blogs/ie/internet-explorer-9-network-performance-improvements
 
-## Google Universal Analytics
-
-### More tracking settings
-
-The [optimized Google Universal Analytics
-snippet](https://mathiasbynens.be/notes/async-analytics-snippet#universal-analytics)
-included with HTML5 Boilerplate includes something like this:
-
-```js
-ga('create', 'UA-XXXXX-X', 'auto'); ga('send', 'pageview');
-```
-
-To customize further, see Google's [Advanced
-Setup](https://developers.google.com/analytics/devguides/collection/analyticsjs/),
-[Pageview](https://developers.google.com/analytics/devguides/collection/analyticsjs/pages),
-and
-[Event](https://developers.google.com/analytics/devguides/collection/analyticsjs/events)
-Docs.
-
-### Track jQuery AJAX requests in Google Analytics
-
-An article by @JangoSteve explains how to [track jQuery AJAX requests in Google
-Analytics](https://www.alfajango.com/blog/track-jquery-ajax-requests-in-google-analytics/).
-
-Add this to `plugins.js`:
-
-```js
-/*
- * Log all jQuery AJAX requests to Google Analytics
- * See: https://www.alfajango.com/blog/track-jquery-ajax-requests-in-google-analytics/
- */
-if (typeof ga !== "undefined" && ga !== null) {
-    $(document).ajaxSend(function(event, xhr, settings){
-        ga('send', 'pageview', settings.url);
-    });
-}
-```
-
-### Track JavaScript errors in Google Analytics
-
-Add this function after `ga` is defined:
-
-```js
-(function(window){
-    var undefined,
-        link = function (href) {
-            var a = window.document.createElement('a');
-            a.href = href;
-            return a;
-        };
-    window.onerror = function (message, file, line, column) {
-        var host = link(file).hostname;
-        ga('send', {
-          'hitType': 'event',
-          'eventCategory': (host == window.location.hostname || host == undefined || host == '' ? '' : 'external ') + 'error',
-          'eventAction': message,
-          'eventLabel': (file + ' LINE: ' + line + (column ? ' COLUMN: ' + column : '')).trim(),
-          'nonInteraction': 1
-        });
-    };
-}(window));
-```
-
-### Track page scroll
-
-Add this function after `ga` is defined. Note, the following snippet requires jQuery.
-
-```js
-$(function(){
-    var isDuplicateScrollEvent,
-        scrollTimeStart = new Date,
-        $window = $(window),
-        $document = $(document),
-        scrollPercent;
-
-    $window.scroll(function() {
-        scrollPercent = Math.round(100 * ($window.height() + $window.scrollTop())/$document.height());
-        if (scrollPercent > 90 && !isDuplicateScrollEvent) { //page scrolled to 90%
-            isDuplicateScrollEvent = 1;
-            ga('send', 'event', 'scroll',
-                'Window: ' + $window.height() + 'px; Document: ' + $document.height() + 'px; Time: ' + Math.round((new Date - scrollTimeStart )/1000,1) + 's'
-            );
-        }
-    });
-});
-```
 
 ## Internet Explorer
 
@@ -477,30 +370,6 @@ the cleaner, more accurate `https://www.example.com/cart.html`.
 <link rel="canonical" href="">
 ```
 
-### Separate mobile URLs
-
-If you use separate URLs for desktop and mobile users, you should consider
-helping search engine algorithms better understand the configuration on your web
-site.
-
-This can be done by adding the following annotations in your HTML pages:
-
-* on the desktop page, add the `link rel="alternate"` tag pointing to the
-  corresponding mobile URL, e.g.:
-
-  `<link rel="alternate" media="only screen and (max-width: 640px)"
-  href="https://m.example.com/page.html" >`
-
-* on the mobile page, add the `link rel="canonical"` tag pointing to the
-  corresponding desktop URL, e.g.:
-
-  `<link rel="canonical" href="https://www.example.com/page.html">`
-
-For more information please see:
-
-* https://developers.google.com/search/mobile-sites/mobile-seo/separate-urls
-
-
 ## Web Apps
 
 There are a couple of meta tags that provide information about a web app when
@@ -591,8 +460,14 @@ Currently, the `theme-color` meta extension is supported by [Chrome 39+ for
 Android
 Lollipop](https://developers.google.com/web/updates/2014/11/Support-for-theme-color-in-Chrome-39-for-Android).
 
+### humans.txt
 
-## security.txt
+You can include a `humans.txt` file in the root of your site which can be used
+to provide information about people involved with the website.
+
+For more information about `humans.txt`, please see: https://humanstxt.org/
+
+### security.txt
 
 When security risks in web services are discovered by users they often lack the
 channels to disclose them properly. As a result, security issues may be left

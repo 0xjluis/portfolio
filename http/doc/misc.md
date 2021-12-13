@@ -7,7 +7,6 @@ table of contents](TOC.md)
 * [.editorconfig](#editorconfig)
 * [Server Configuration](#server-configuration)
 * [robots.txt](#robotstxt)
-* [humans.txt](#humanstxt)
 * [browserconfig.xml](#browserconfigxml)
 * [package.json](#packagejson)
 
@@ -137,20 +136,6 @@ For more information about `robots.txt`, please see:
 * [robotstxt.org](https://www.robotstxt.org/)
 * [How Google handles the `robots.txt` file](https://developers.google.com/search/reference/robots_txt)
 
-## humans.txt
-
-The `humans.txt` file is used to provide information about people involved with
-the website.
-
-The provided file contains three sections:
-
-* `TEAM` - this is intended to list the group of people responsible for the website
-* `THANKS` - this is intended to list the group of people that have contributed
-  to the website
-* `TECHNOLOGY COLOPHON` - the section lists technologies used to make the website
-
-For more information about `humans.txt`, please see: http://humanstxt.org/
-
 ## browserconfig.xml
 
 The `browserconfig.xml` file is used to customize the tile displayed when users
@@ -184,13 +169,11 @@ if you're interested. The fields we provide are as follows:
   node environment. There are many [built-in keys](https://docs.npmjs.com/misc/scripts)
   related to the package lifecycle that node understands automatically. You can
   also define custom scripts for use with your application development. We
-  provide three custom scripts that work with Parcel to get you up and running
+  provide three custom scripts that work with WebPack to get you up and running
   quickly with a bundler for your assets and a simple development server.
 
-  * `start` builds your site and starts a server
-  * `build` builds your `index.html` using Parcel
-  * `dev` serves your `index.html` with a simple development server
-
+  * `start` serves your `index.html` with a simple development server
+  
 * `keywords` - an array of keywords used to discover your app in the npm
   registry
 * `author` - defines the author of a package. There is also an alternative
@@ -199,5 +182,4 @@ if you're interested. The fields we provide are as follows:
 * `license` - the license for your application. Must conform to
   [specific rules](https://docs.npmjs.com/files/package.json#license)
 * `devDependencies` - development dependencies for your package. In our case
-  it's a single dependency, Parcel, which we use to bundle files and run a
-  simple web server.
+ we have several dependencies used by WebPack, which we use as a simple development server.
