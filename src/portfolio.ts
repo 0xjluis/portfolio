@@ -5,8 +5,9 @@ import * as https from "https";
 import Web3 from "web3";
 import { Contract } from "web3-eth-contract";
 import { IncomingMessage } from "http";
-import { makeWeb3, makeToken } from "./help3";
 import Decimals from "./decimals";
+import { makeWeb3, makeToken } from "./help3";
+import { Executor } from "./promises";
 
 // +------------+
 // | Interfaces |
@@ -45,18 +46,16 @@ export interface Balance {
 // +------+
 
 function request(url: string): Promise<Buffer> {
-    type Resolve = (value: Buffer) => void;
-    //eslint-disable-next-line @typescript-eslint/no-explicit-any
-    type Reject = (reason?: any) => void;
-    return new Promise(function (resolve: Resolve, reject: Reject): void {
-        function callback(res: IncomingMessage): void {
+    const f: Executor<Buffer, void> = (resolve, reject) => {
+        const callback = (res: IncomingMessage): void => {
             res.on("data", resolve);
             res.on("error", reject);
-        }
+        };
         const req = https.request(url, callback);
         req.on("error", reject);
         req.end();
-    });
+    };
+    return new Promise(f);
 }
 
 /**
@@ -78,25 +77,15 @@ async function getPrice(
 
     const url = `https://api.coingecko.com/api/v3/simple/token_price/${chain}?contract_addresses=${tokenAddress}&vs_currencies=${currency}`;
 
-    // interface Result {
-    //   [tokenAddress: string]: {usd: number};
-    // }
-
     return request(url)
         .then((x: Buffer) => JSON.parse(x.toString()))
         .then((value): number => {
-            if (
-                Object.hasOwnProperty.call(value, tokenAddress) &&
-                Object.hasOwnProperty.call(value[tokenAddress], currency)
-            ) {
+            if (tokenAddress in value && currency in value[tokenAddress]) {
                 return value[tokenAddress][currency];
-            } else {
-                const body = JSON.stringify(value);
-                console.error(
-                    `getPrice: bad response: url=${url} body=${body}`
-                );
             }
-            return 0;
+            const body = JSON.stringify(value);
+            const message = `bad response: url=${url} body=${body}`;
+            throw new Error(message);
         });
 }
 
@@ -157,7 +146,12 @@ async function getBalance(
     token: TokenConfig
 ): Promise<Balance> {
     // If a token has a staked version, we'd like to use also that one.
-    let balance: number = await getBalanceNorm(web3, chain, owner, token.address);
+    let balance: number = await getBalanceNorm(
+        web3,
+        chain,
+        owner,
+        token.address
+    );
     if (token.staked) {
         balance += await getBalanceNorm(web3, chain, owner, token.staked);
     }
@@ -188,22 +182,21 @@ export function readConfig(): Config {
 
 export async function getPortfolio(config: Config): Promise<Balance[]> {
     // An array of promises, which we later convert to a promise of an
-    // array.
+    // array of all respective values evaluated.
     let xs: Promise<Balance>[] = new Array<Promise<Balance>>();
 
     // For each chain.
     for (const chain in config) {
         if (Object.hasOwnProperty.call(config, chain)) {
-            const web3: Web3 = makeWeb3(chain);
-            const walletConfig: WalletConfig = config[chain];
+            const web3 = makeWeb3(chain);
+            const walletConfig = config[chain];
             //
             // For each wallet.
             for (const wallet in walletConfig) {
                 if (Object.hasOwnProperty.call(walletConfig, wallet)) {
                     //
                     // For each token in this wallet, add a new promise to the `xs` array.
-                    const tokenConfigs: readonly TokenConfig[] =
-                        walletConfig[wallet];
+                    const tokenConfigs = walletConfig[wallet];
                     const f = async function (
                         token: TokenConfig
                     ): Promise<Balance> {

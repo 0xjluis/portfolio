@@ -40,21 +40,22 @@ exports.__esModule = true;
 exports.getPortfolio = exports.readConfig = void 0;
 var fs = require("fs");
 var https = require("https");
-var help3_1 = require("./help3");
 var decimals_1 = require("./decimals");
+var help3_1 = require("./help3");
 // +------+
 // | HTTP |
 // +------+
 function request(url) {
-    return new Promise(function (resolve, reject) {
-        function callback(res) {
+    var f = function (resolve, reject) {
+        var callback = function (res) {
             res.on("data", resolve);
             res.on("error", reject);
-        }
+        };
         var req = https.request(url, callback);
         req.on("error", reject);
         req.end();
-    });
+    };
+    return new Promise(f);
 }
 /**
  * getPrice returns a token's price in the given target
@@ -73,21 +74,15 @@ function getPrice(chain, tokenAddress, currency) {
             chain = chain.toLowerCase();
             tokenAddress = tokenAddress.toLowerCase();
             url = "https://api.coingecko.com/api/v3/simple/token_price/".concat(chain, "?contract_addresses=").concat(tokenAddress, "&vs_currencies=").concat(currency);
-            // interface Result {
-            //   [tokenAddress: string]: {usd: number};
-            // }
             return [2 /*return*/, request(url)
                     .then(function (x) { return JSON.parse(x.toString()); })
                     .then(function (value) {
-                    if (Object.hasOwnProperty.call(value, tokenAddress) &&
-                        Object.hasOwnProperty.call(value[tokenAddress], currency)) {
+                    if (tokenAddress in value && currency in value[tokenAddress]) {
                         return value[tokenAddress][currency];
                     }
-                    else {
-                        var body = JSON.stringify(value);
-                        console.error("getPrice: bad response: url=".concat(url, " body=").concat(body));
-                    }
-                    return 0;
+                    var body = JSON.stringify(value);
+                    var message = "bad response: url=".concat(url, " body=").concat(body);
+                    throw new Error(message);
                 })];
         });
     });
