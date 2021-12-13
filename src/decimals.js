@@ -1,5 +1,19 @@
 "use strict";
-/* eslint-disable @typescript-eslint/no-explicit-any */
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    };
+    return function (d, b) {
+        if (typeof b !== "function" && b !== null)
+            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -37,116 +51,183 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 exports.__esModule = true;
-exports.insertDecimals = exports.selectDecimals = void 0;
+var sqlite3_1 = require("sqlite3");
 var help3_1 = require("./help3");
-//eslint-disable-next-line @typescript-eslint/no-var-requires
-var sqlite3 = require("sqlite3").verbose();
-function database(f) {
-    return __awaiter(this, void 0, void 0, function () {
-        var cb, db, create, executor;
-        return __generator(this, function (_a) {
-            cb = function (msg) {
-                return function (err) {
-                    if (err) {
-                        console.error(err);
-                        console.error(err.message);
-                    }
-                    else {
-                        console.log(msg);
-                    }
-                };
-            };
-            db = new sqlite3.Database("decimals.db", cb("INF Connected to decimals.db."));
-            create = "CREATE TABLE IF NOT EXISTS \"decimals\" (\n        \"id\" integer NOT NULL PRIMARY KEY AUTOINCREMENT,\n        \"chain\" varchar(64) NOT NULL,\n        \"token\" varchar(42) NOT NULL,\n        \"value\" smallint unsigned NOT NULL CHECK (\"value\" >= 0)\n    );\n    CREATE UNIQUE INDEX \"decimals_chain_token_4c316d1d_uniq\" ON \"decimals\" (\"chain\", \"token\");";
-            executor = function (resolve, reject) {
-                db.serialize(function () {
-                    db.run(create);
-                    f(db)
-                        .then(resolve, reject)
-                        .then(function (_value) {
-                        db.close(cb("INF Closed decimals.db."));
-                    });
-                });
-            };
-            return [2 /*return*/, new Promise(executor)];
-        });
-    });
-}
-function selectDecimals(chain, tokenAddress) {
-    return __awaiter(this, void 0, void 0, function () {
-        var select;
-        return __generator(this, function (_a) {
-            select = "SELECT \"value\" FROM \"decimals\" WHERE \"chain\" = $chain AND \"token\" = $token;";
-            return [2 /*return*/, database(function (db) {
-                    var executor = function (resolve, reject) {
-                        var params = {
-                            $chain: chain,
-                            $token: tokenAddress
-                        };
-                        var cb = function (err, row) {
-                            if (err == null && row != null) {
-                                resolve(row.value);
-                            }
-                            else {
-                                reject(err);
-                            }
-                        };
-                        db.get(select, params, cb);
-                    };
-                    return new Promise(executor);
-                })];
-        });
-    });
-}
-exports.selectDecimals = selectDecimals;
-function insertDecimals(chain, tokenAddress, value) {
-    return __awaiter(this, void 0, void 0, function () {
-        var insert;
-        return __generator(this, function (_a) {
-            insert = "INSERT INTO \"decimals\" VALUES (NULL, $chain, $token, $value);";
-            return [2 /*return*/, database(function (db) {
-                    var executor = function (resolve, reject) {
-                        var cb = function (err, _row) {
-                            if (err == null) {
-                                resolve();
-                            }
-                            else {
-                                reject(err);
-                            }
-                        };
-                        db.run(insert, {
-                            $chain: chain,
-                            $token: tokenAddress,
-                            $value: value
-                        }, cb);
-                    };
-                    return new Promise(executor);
-                })];
-        });
-    });
-}
-exports.insertDecimals = insertDecimals;
+// +------+
+// | Web3 |
+// +------+
 function callDecimals(web3, chain, tokenAddress) {
     // TODO: Check cache.
     var contract = (0, help3_1.makeToken)(web3, tokenAddress);
-    return contract.methods
+    return (contract.methods
         .decimals()
         .call()["catch"](function (reason) {
-        var _a;
-        var provider = (_a = web3.currentProvider) === null || _a === void 0 ? void 0 : _a.toString();
-        console.error("decimals failed: chain=".concat(chain, " provider=").concat(provider, " token=").concat(tokenAddress, " reason=").concat(reason));
-        return 0;
-    });
+        // In the case of an error, give a bit more information.
+        console.error("IERC20.decimals failed: chain=".concat(chain, " token=").concat(tokenAddress, " reason=").concat(reason));
+        throw reason;
+    }));
 }
-function getDecimals(web3, chain, tokenAddress) {
-    return __awaiter(this, void 0, void 0, function () {
-        return __generator(this, function (_a) {
-            return [2 /*return*/, selectDecimals(chain, tokenAddress)["catch"](function (_err) {
-                    return callDecimals(web3, chain, tokenAddress).then(function (value) {
-                        return insertDecimals(chain, tokenAddress, value).then(function () { return value; });
-                    });
-                })];
+// Specific error type for the case of no row returned.
+var UndefinedRow = /** @class */ (function (_super) {
+    __extends(UndefinedRow, _super);
+    function UndefinedRow(message) {
+        var _this = _super.call(this, message) || this;
+        // https://www.typescriptlang.org/docs/handbook/2/classes.html#inheriting-built-in-types
+        Object.setPrototypeOf(_this, UndefinedRow.prototype);
+        return _this;
+    }
+    return UndefinedRow;
+}(Error));
+/**
+ * promisedCallback returns a convenient callback that can be used
+ * with `Database.run` and that invokes `resolve` or `reject` on
+ * respective conditions.
+ *
+ * @param resolve
+ * @param reject
+ * @returns
+ */
+function promisedCallback(
+//eslint-disable-next-line @typescript-eslint/no-explicit-any
+resolve, reject) {
+    return function (err, row) {
+        if (err != null) {
+            console.error("ERR err=".concat(err));
+            console.error("ERR name=".concat(err.name));
+            console.error("ERR message=".concat(err.message));
+            reject(err);
+        }
+        else if (row != null) {
+            resolve(row);
+        }
+        else {
+            reject(new UndefinedRow());
+        }
+    };
+}
+/**
+ * Database is created on construction, close() should be called
+ * explicitly.
+ */
+var Decimals = /** @class */ (function () {
+    function Decimals() {
+        this.db = new sqlite3_1.Database("decimals.db", this.messageCb(""));
+    }
+    Decimals.prototype.close = function () {
+        this.db.close(this.messageCb(""));
+    };
+    Decimals.prototype.messageCb = function (s) {
+        return function (err) {
+            if (err) {
+                console.error(err);
+                console.error(typeof err);
+                console.error(err.message);
+            }
+            else if (s) {
+                console.log(s);
+            }
+        };
+    };
+    Decimals.prototype.create = function () {
+        var _this = this;
+        var create = "CREATE TABLE IF NOT EXISTS \"decimals\" (\n            \"id\" integer NOT NULL PRIMARY KEY AUTOINCREMENT,\n            \"chain\" varchar(64) NOT NULL,\n            \"token\" varchar(42) NOT NULL,\n            \"value\" smallint unsigned NOT NULL CHECK (\"value\" >= 0)\n        );";
+        var unique = "CREATE UNIQUE INDEX IF NOT EXISTS \"decimals_chain_token_4c316d1d_uniq\"\n            ON \"decimals\" (\"chain\", \"token\");";
+        this.db.serialize(function () {
+            var cb = function cb(err) {
+                if (err != null) {
+                    console.error("create: run failed: lastID=".concat(this.lastID), "changes=".concat(this.changes), "err.name=".concat(err.name), "err.message=".concat(err.message), "err.stack=".concat(err.stack));
+                }
+            };
+            _this.db.run(create, cb);
+            _this.db.run(unique, cb);
         });
-    });
-}
-exports["default"] = getDecimals;
+    };
+    Decimals.prototype.select = function (chain, token) {
+        return __awaiter(this, void 0, void 0, function () {
+            var select, executor;
+            var _this = this;
+            return __generator(this, function (_a) {
+                select = "SELECT \"value\" FROM \"decimals\" WHERE \"chain\" = ? AND \"token\" = ?;";
+                executor = function (resolve, reject) {
+                    _this.db.serialize(function () {
+                        _this.create();
+                        _this.db.get(select, chain, token, promisedCallback(resolve, reject));
+                    });
+                };
+                return [2 /*return*/, new Promise(executor).then(function (row) {
+                        if ("value" in row && typeof row.value === "number") {
+                            return row.value;
+                        }
+                        return 18;
+                    })];
+            });
+        });
+    };
+    Decimals.prototype.insert = function (chain, token, value) {
+        return __awaiter(this, void 0, void 0, function () {
+            var insert, executor;
+            var _this = this;
+            return __generator(this, function (_a) {
+                insert = "INSERT INTO \"decimals\" VALUES (NULL, ?, ?, ?);";
+                executor = function (resolve, reject) {
+                    _this.db.serialize(function () {
+                        _this.create();
+                        _this.db.run(insert, chain, token, value, promisedCallback(function (x) {
+                            console.log("RESULT", x, typeof x);
+                            resolve();
+                        }, reject));
+                    });
+                };
+                return [2 /*return*/, new Promise(executor)["catch"](function (err) {
+                        if (err instanceof UndefinedRow) {
+                            // Expected.
+                            return;
+                        }
+                        throw err;
+                    })];
+            });
+        });
+    };
+    Decimals.prototype.get = function (web3, chain, token) {
+        return __awaiter(this, void 0, void 0, function () {
+            var e_1;
+            var _this = this;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        token = token.toLowerCase();
+                        _a.label = 1;
+                    case 1:
+                        _a.trys.push([1, 3, , 4]);
+                        return [4 /*yield*/, this.select(chain, token)];
+                    case 2: return [2 /*return*/, _a.sent()];
+                    case 3:
+                        e_1 = _a.sent();
+                        if (e_1 instanceof UndefinedRow) {
+                            // console.log(`DBG decimals not cached for chain=${chain} token=${token}, calling...`);
+                            // Undefined row means such an entry doesn't exist.
+                            // Call the decimals() method on the token contract
+                            // and store result in database.
+                            return [2 /*return*/, callDecimals(web3, chain, token).then(function (value) { return __awaiter(_this, void 0, void 0, function () {
+                                    return __generator(this, function (_a) {
+                                        switch (_a.label) {
+                                            case 0: return [4 /*yield*/, this.insert(chain, token, value)];
+                                            case 1:
+                                                _a.sent();
+                                                return [2 /*return*/, value];
+                                        }
+                                    });
+                                }); })];
+                        }
+                        else {
+                            throw e_1;
+                        }
+                        return [3 /*break*/, 4];
+                    case 4: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    return Decimals;
+}());
+exports["default"] = Decimals;

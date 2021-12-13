@@ -6,7 +6,7 @@ import Web3 from "web3";
 import { Contract } from "web3-eth-contract";
 import { IncomingMessage } from "http";
 import { makeWeb3, makeToken } from "./help3";
-import getDecimals from "./decimals";
+import Decimals from "./decimals";
 
 // +------------+
 // | Interfaces |
@@ -132,8 +132,11 @@ async function getBalanceNorm(
             return 0;
         });
 
-    const decimals = await getDecimals(web3, chain, tokenAddress);
-    const norm: number = balance / Math.pow(10, decimals);
+    const decimals = new Decimals();
+    const value = await decimals.get(web3, chain, tokenAddress);
+    decimals.close(); // Not the smartest thing, but completely fine for now. :)
+
+    const norm: number = balance / Math.pow(10, value);
     return norm;
 }
 

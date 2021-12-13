@@ -27,7 +27,7 @@
     "apache-server-configs": "^4.0.0",
     "archiver": "^4.0.1",
     "del": "^5.1.0",
-    "eslint": "^7.1.0",
+    "eslint": "^7.12.1",
     "eslint-config-recommended": "^4.1.0",
     "eslint-plugin-mocha": "^7.0.1",
     "glob": "^7.1.6",
@@ -76,5 +76,10 @@
     "modernizr-config.json",
     "README.md"
   ],
-  "dependencies": {}
+  "dependencies": {
+    "eslint-config-standard": "^16.0.3",
+    "eslint-plugin-import": "^2.22.1",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-promise": "^4.2.1"
+  }
 }

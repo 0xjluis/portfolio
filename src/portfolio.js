@@ -106,7 +106,7 @@ function getPrice(chain, tokenAddress, currency) {
  */
 function getBalanceNorm(web3, chain, owner, tokenAddress) {
     return __awaiter(this, void 0, void 0, function () {
-        var contract, balance, decimals, norm;
+        var contract, balance, decimals, value, norm;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -121,10 +121,12 @@ function getBalanceNorm(web3, chain, owner, tokenAddress) {
                         })];
                 case 1:
                     balance = _a.sent();
-                    return [4 /*yield*/, (0, decimals_1["default"])(web3, chain, tokenAddress)];
+                    decimals = new decimals_1["default"]();
+                    return [4 /*yield*/, decimals.get(web3, chain, tokenAddress)];
                 case 2:
-                    decimals = _a.sent();
-                    norm = balance / Math.pow(10, decimals);
+                    value = _a.sent();
+                    decimals.close(); // Not the smartest thing, but completely fine for now. :)
+                    norm = balance / Math.pow(10, value);
                     return [2 /*return*/, norm];
             }
         });

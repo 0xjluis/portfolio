@@ -13,6 +13,9 @@ const Web3_ = require("web3");
  */
  export function makeWeb3(chain: string): Web3 {
     const id = process.env.WEB3_INFURA_PROJECT_ID;
+    if (!id) {
+        throw new Error("empty WEB3_INFURA_PROJECT_ID");
+    }
     let provider = `https://mainnet.infura.io/v3/${id}`;
     if (chain === "avalanche") {
         provider = "https://api.avax.network/ext/bc/C/rpc";
