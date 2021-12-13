@@ -2,7 +2,7 @@
   "name": "portfolio",
   "version": "1.0.0",
   "description": "Track your on-chain portfolio.",
-  "main": "portfolio.js",
+  "main": "cmd/cli.js",
   "scripts": {
     "cli": "node cmd/cli.js",
     "compile": "npx tsc **/*.ts",
@@ -11,7 +11,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "github.com/ydm/portfolio.js"
+    "url": "github.com/ydm/portfolio"
   },
   "author": "Yordan Miladinov <jordanMiladinov@gmail.com>",
   "license": "GPL-3.0-or-later",

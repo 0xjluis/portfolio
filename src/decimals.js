@@ -1,4 +1,6 @@
 "use strict";
+// Exports a single class Decimals that handles calling and caching
+// of IERC20.decimals().
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
         extendStatics = Object.setPrototypeOf ||

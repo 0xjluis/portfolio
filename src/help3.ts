@@ -38,5 +38,6 @@ export function makeContract(
 }
 
 export function makeToken(web3: Web3, address?: string): Contract {
+    // cd interfaces && solc --abi IERC20.sol -o .
     return makeContract(web3, "interfaces/IERC20.abi", address);
 }

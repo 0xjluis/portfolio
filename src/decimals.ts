@@ -1,3 +1,6 @@
+// Exports a single class Decimals that handles calling and caching
+// of IERC20.decimals().
+
 import Web3 from "web3";
 import { Contract } from "web3-eth-contract";
 import { Database, RunResult, Statement } from "sqlite3";
