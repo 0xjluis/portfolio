@@ -1,5 +1,3 @@
-// cd interface && solc --abi IERC20.sol -o .
-
 import * as fs from "fs";
 import * as https from "https";
 import Web3 from "web3";
