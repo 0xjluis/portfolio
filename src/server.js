@@ -39,43 +39,33 @@ exports.__esModule = true;
 var express = require("express");
 var dotenv_1 = require("dotenv");
 var portfolio_1 = require("./portfolio");
+function handle(req, res) {
+    return __awaiter(this, void 0, void 0, function () {
+        var config, balances;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    config = req.body ? req.body : (0, portfolio_1.readConfig)();
+                    return [4 /*yield*/, (0, portfolio_1.getPortfolio)(config)];
+                case 1:
+                    balances = _a.sent();
+                    res.send(balances);
+                    res.end();
+                    return [2 /*return*/];
+            }
+        });
+    });
+}
 function main() {
     // Load .env.
     (0, dotenv_1.config)();
     // Create application.
     var app = express();
+    // Parse JSON bodies.
+    app.use(express.json());
     // Attach handlers.
-    app.get("/", function (_req, res) {
-        return __awaiter(this, void 0, void 0, function () {
-            var config, balances, totalInvested, totalValue, totalPNL, body;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        config = (0, portfolio_1.readConfig)();
-                        return [4 /*yield*/, (0, portfolio_1.getPortfolio)(config)];
-                    case 1:
-                        balances = _a.sent();
-                        totalInvested = 0.0;
-                        totalValue = 0.0;
-                        totalPNL = 0.0;
-                        balances.forEach(function (element) {
-                            totalValue += element.notional;
-                            totalInvested += element.invested;
-                            totalPNL += element.notional - element.invested;
-                        });
-                        body = "Total: ".concat(totalValue, "\n") +
-                            "Invested: ".concat(totalInvested, "\n") +
-                            "PNL: ".concat(totalPNL, "\n") +
-                            "ROI: ".concat((100 * totalPNL) / totalInvested, "%\n") +
-                            "\n" +
-                            JSON.stringify(balances, null, "\t");
-                        res.set("Content-Type", "text/plain");
-                        res.send(body);
-                        return [2 /*return*/];
-                }
-            });
-        });
-    });
+    app.get("/", handle);
+    app.post("/", handle);
     // Start server.
     app.listen(3334);
 }

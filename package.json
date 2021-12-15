@@ -7,6 +7,7 @@
     "cli": "node cmd/cli.js",
     "compile": "npx tsc **/*.ts",
     "lint": "npx eslint **/*.ts",
+    "start": "node src/server.js",
     "upgrade": "npm install --no-save npm-check-updates && npx npm-check-updates -u"
   },
   "repository": {
