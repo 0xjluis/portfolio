@@ -7,4 +7,4 @@ curl \
     --header "Content-Type: application/json" \
     --request POST \
     --data "$DATA" \
-    http://127.0.0.1:3334/
+    http://127.0.0.1:80/

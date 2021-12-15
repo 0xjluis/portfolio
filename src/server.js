@@ -67,6 +67,6 @@ function main() {
     app.get("/", handle);
     app.post("/", handle);
     // Start server.
-    app.listen(3334);
+    app.listen(80);
 }
 main();

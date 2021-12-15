@@ -27,7 +27,7 @@ function main() {
     app.post("/", handle);
 
     // Start server.
-    app.listen(3334);
+    app.listen(80);
 }
 
 main();
