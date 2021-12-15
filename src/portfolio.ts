@@ -79,14 +79,27 @@ async function getPrice(
 
     return request(url)
         .then((x: Buffer) => JSON.parse(x.toString()))
-        .then((value): number => {
-            if (tokenAddress in value && currency in value[tokenAddress]) {
+        //eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .then((value: any): number => {
+            if (value && tokenAddress in value && currency in value[tokenAddress]) {
                 return value[tokenAddress][currency];
             }
             const body = JSON.stringify(value);
-            const message = `bad response: url=${url} body=${body}`;
+            const message = `bad response: body=${body}`;
             throw new Error(message);
-        });
+        })
+        //eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .catch((reason: any): number => {
+            console.error(
+                `ERR getPrice.request failed:`,
+                `url=${url}`,
+                `chain=${chain}`,
+                `token=${tokenAddress}`,
+                `currency=${currency}`,
+                `reason=${reason}`
+            );
+            return 0;
+        })
 }
 
 // +------+

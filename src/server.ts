@@ -14,7 +14,7 @@ async function handle(
 }
 
 function main() {
-    // Load .env.
+    // Load .env, if present.
     dotenvConfig();
 
     // Create application.

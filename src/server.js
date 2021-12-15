@@ -58,7 +58,7 @@ function handle(req, res) {
     });
 }
 function main() {
-    // Load .env.
+    // Load .env, if present.
     (0, dotenv_1.config)();
     // Create application.
     var app = express();

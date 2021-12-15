@@ -75,13 +75,17 @@ function getPrice(chain, tokenAddress, currency) {
             url = "https://api.coingecko.com/api/v3/simple/token_price/".concat(chain, "?contract_addresses=").concat(tokenAddress, "&vs_currencies=").concat(currency);
             return [2 /*return*/, request(url)
                     .then(function (x) { return JSON.parse(x.toString()); })
+                    //eslint-disable-next-line @typescript-eslint/no-explicit-any
                     .then(function (value) {
-                    if (tokenAddress in value && currency in value[tokenAddress]) {
+                    if (value && tokenAddress in value && currency in value[tokenAddress]) {
                         return value[tokenAddress][currency];
                     }
                     var body = JSON.stringify(value);
-                    var message = "bad response: url=".concat(url, " body=").concat(body);
+                    var message = "bad response: body=".concat(body);
                     throw new Error(message);
+                })["catch"](function (reason) {
+                    console.error("ERR getPrice.request failed:", "url=".concat(url), "chain=".concat(chain), "token=".concat(tokenAddress), "currency=".concat(currency), "reason=".concat(reason));
+                    return 0;
                 })];
         });
     });
