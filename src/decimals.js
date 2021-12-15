@@ -74,7 +74,7 @@ var UndefinedRow = /** @class */ (function (_super) {
     __extends(UndefinedRow, _super);
     function UndefinedRow(message) {
         var _this = _super.call(this, message) || this;
-        // https://www.typescriptlang.org/docs/handbook/2/classes.html#inheriting-built-in-types
+        // https://bit.ly/3dSw9WQ
         Object.setPrototypeOf(_this, UndefinedRow.prototype);
         return _this;
     }

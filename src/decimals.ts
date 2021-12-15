@@ -51,7 +51,7 @@ class UndefinedRow extends Error {
     constructor(message?: string) {
         super(message);
 
-        // https://www.typescriptlang.org/docs/handbook/2/classes.html#inheriting-built-in-types
+        // https://bit.ly/3dSw9WQ
         Object.setPrototypeOf(this, UndefinedRow.prototype);
     }
 }

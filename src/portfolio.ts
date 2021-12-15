@@ -39,6 +39,8 @@ export interface Balance {
     readonly precision: number;
 }
 
+export type Balances = Balance[];
+
 // +------+
 // | HTTP |
 // +------+
@@ -178,7 +180,7 @@ export function readConfig(): Config {
     return obj;
 }
 
-export async function getPortfolio(config: Config): Promise<Balance[]> {
+export async function getPortfolio(config: Config): Promise<Balances> {
     // An array of promises, which we later convert to a promise of an
     // array of all respective values evaluated.
     let xs: Promise<Balance>[] = new Array<Promise<Balance>>();
