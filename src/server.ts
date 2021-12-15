@@ -27,7 +27,7 @@ function main() {
     app.post("/", handle);
 
     // Start server.
-    const port: number = parseInt(process.env.PORT, 10) || 80;
+    const port: number = parseInt(process.env.PORT || "3334", 10);
     app.listen(port);
 }
 

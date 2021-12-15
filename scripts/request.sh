@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# URL="http://127.0.0.1:3334/"
+URL="http://evening-inlet-31733.herokuapp.com/"
 DATA=$(cat config.json)
 
 curl \
@@ -7,4 +9,4 @@ curl \
     --header "Content-Type: application/json" \
     --request POST \
     --data "$DATA" \
-    http://127.0.0.1:80/
+    "$URL"

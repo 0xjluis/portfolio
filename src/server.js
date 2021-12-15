@@ -67,7 +67,7 @@ function main() {
     app.get("/", handle);
     app.post("/", handle);
     // Start server.
-    var port = parseInt(process.env.PORT, 10) || 80;
+    var port = parseInt(process.env.PORT || "3334", 10);
     app.listen(port);
 }
 main();
