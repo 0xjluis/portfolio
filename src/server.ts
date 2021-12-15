@@ -1,4 +1,5 @@
 import * as express from "express";
+import * as cors from "cors";
 import { config as dotenvConfig } from "dotenv";
 import { Config, getPortfolio, readConfig } from "./portfolio";
 
@@ -19,8 +20,8 @@ function main() {
     // Create application.
     const app: express.Express = express();
 
-    // Parse JSON bodies.
-    app.use(express.json());
+    app.use(cors()); // Allow CORS.
+    app.use(express.json()); // Parse JSON bodies.
 
     // Attach handlers.
     app.get("/", handle);

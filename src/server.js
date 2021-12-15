@@ -37,6 +37,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 exports.__esModule = true;
 var express = require("express");
+var cors = require("cors");
 var dotenv_1 = require("dotenv");
 var portfolio_1 = require("./portfolio");
 function handle(req, res) {
@@ -61,8 +62,8 @@ function main() {
     (0, dotenv_1.config)();
     // Create application.
     var app = express();
-    // Parse JSON bodies.
-    app.use(express.json());
+    app.use(cors()); // Allow CORS.
+    app.use(express.json()); // Parse JSON bodies.
     // Attach handlers.
     app.get("/", handle);
     app.post("/", handle);
