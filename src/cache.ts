@@ -2,36 +2,9 @@
 // of IERC20.decimals().
 
 import Web3 from "web3";
-import { Contract } from "web3-eth-contract";
 import { Database, RunResult, Statement } from "sqlite3";
-import { makeToken } from "./help3";
+import { callDecimals, callSymbol } from "./help3";
 import { Executor, Resolve, Reject } from "./promises";
-
-// +------+
-// | Web3 |
-// +------+
-
-function callDecimals(
-    web3: Web3,
-    chain: string,
-    tokenAddress: string
-): Promise<number> {
-    // TODO: Check cache.
-    const contract: Contract = makeToken(web3, tokenAddress);
-    return (
-        contract.methods
-            .decimals()
-            .call()
-            //eslint-disable-next-line @typescript-eslint/no-explicit-any
-            .catch((reason: any): number => {
-                // In the case of an error, give a bit more information.
-                console.error(
-                    `IERC20.decimals failed: chain=${chain} token=${tokenAddress} reason=${reason}`
-                );
-                throw reason;
-            })
-    );
-}
 
 // +--------+
 // | SQLite |
@@ -88,11 +61,12 @@ function promisedCallback(
  * Database is created on construction, close() should be called
  * explicitly.
  */
-export default class Decimals {
+export default class Cache {
     private db!: Database;
 
-    constructor() {
-        this.db = new Database("decimals.db", this.messageCb(""));
+    constructor(file = "cache.db") {
+        this.db = new Database(file, this.messageCb(""));
+        this.create();
     }
 
     close() {
@@ -102,9 +76,7 @@ export default class Decimals {
     private messageCb(s: string): ErrorCallback {
         return (err) => {
             if (err) {
-                console.error(err);
-                console.error(typeof err);
-                console.error(err.message);
+                console.error(`ERR ${err.message}`);
             } else if (s) {
                 console.log(s);
             }
@@ -112,14 +84,15 @@ export default class Decimals {
     }
 
     private create() {
-        const create = `CREATE TABLE IF NOT EXISTS "decimals" (
+        const create = `CREATE TABLE IF NOT EXISTS "cache" (
             "id" integer NOT NULL PRIMARY KEY AUTOINCREMENT,
             "chain" varchar(64) NOT NULL,
             "token" varchar(42) NOT NULL,
-            "value" smallint unsigned NOT NULL CHECK ("value" >= 0)
+            "decimals" smallint unsigned NOT NULL CHECK ("decimals" >= 0),
+            "symbol" varchar(32) NOT NULL
         );`;
-        const unique = `CREATE UNIQUE INDEX IF NOT EXISTS "decimals_chain_token_4c316d1d_uniq"
-            ON "decimals" ("chain", "token");`;
+        const unique = `CREATE UNIQUE INDEX IF NOT EXISTS "cache_chain_token_4c316d1d_uniq"
+            ON "cache" ("chain", "token");`;
 
         this.db.serialize(() => {
             const cb: RunResultCallback = function cb(this, err) {
@@ -138,12 +111,15 @@ export default class Decimals {
         });
     }
 
-    private async select(chain: string, token: string): Promise<number> {
-        const select = `SELECT "value" FROM "decimals" WHERE "chain" = ? AND "token" = ?;`;
+    private async select<T>(
+        chain: string,
+        token: string,
+        key: string
+    ): Promise<T> {
+        const select = `SELECT "${key}" FROM "cache" WHERE "chain" = ? AND "token" = ?;`;
         //eslint-disable-next-line @typescript-eslint/no-explicit-any
         const executor: Executor<any, void> = (resolve, reject) => {
             this.db.serialize(() => {
-                this.create();
                 this.db.get(
                     select,
                     chain,
@@ -152,29 +128,29 @@ export default class Decimals {
                 );
             });
         };
-
-        return new Promise(executor).then((row): number => {
-            if ("value" in row && typeof row.value === "number") {
-                return row.value;
+        //eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return new Promise(executor).then((row: any): T => {
+            if (key in row) {
+                return row[key];
             }
-            return 18;
+            throw new UndefinedRow("TODO?");
         });
     }
 
     private async insert(
         chain: string,
         token: string,
-        value: number
+        values: { decimals: number; symbol: string }
     ): Promise<void> {
-        const insert = `INSERT INTO "decimals" VALUES (NULL, ?, ?, ?);`;
+        const insert = `INSERT INTO "cache" VALUES (NULL, ?, ?, ?, ?);`;
         const executor: Executor<void, void> = (resolve, reject) => {
             this.db.serialize(() => {
-                this.create();
                 this.db.run(
                     insert,
                     chain,
                     token,
-                    value,
+                    values.decimals,
+                    values.symbol,
                     promisedCallback((x) => {
                         console.log("RESULT", x, typeof x);
                         resolve();
@@ -187,28 +163,62 @@ export default class Decimals {
                 // Expected.
                 return;
             }
-            throw err;
+            console.error("ERR", typeof err, err);
+            throw new Error("illegal state");
         });
     }
 
-    async get(web3: Web3, chain: string, token: string): Promise<number> {
+    private async get(
+        web3: Web3,
+        chain: string,
+        token: string,
+        key: string
+    ): Promise<unknown> {
         token = token.toLowerCase();
-        try {
-            return await this.select(chain, token);
-        } catch (e) {
-            if (e instanceof UndefinedRow) {
-                // console.log(`DBG decimals not cached for chain=${chain} token=${token}, calling...`);
 
-                // Undefined row means such an entry doesn't exist.
-                // Call the decimals() method on the token contract
-                // and store result in database.
-                return callDecimals(web3, chain, token).then(async (value) => {
-                    await this.insert(chain, token, value);
-                    return value;
-                });
-            } else {
+        try {
+            return await this.select(chain, token, key);
+        } catch (e) {
+            if (!(e instanceof UndefinedRow)) {
+                // Unrecognized error type.
                 throw e;
             }
+
+            // Undefined row means such an entry doesn't exist. Call
+            // decimals() and symbol() methods on the token contract
+            // and store result in database.
+            const decimals = await callDecimals(web3, token);
+            const symbol = await callSymbol(web3, token);
+            await this.insert(chain, token, { decimals, symbol });
+
+            // Try again.  If it fails, it fails.
+            return await this.select(chain, token, key);
         }
+    }
+
+    async getString(
+        web3: Web3,
+        chain: string,
+        token: string,
+        key: string
+    ): Promise<string> {
+        return this.get(web3, chain, token, key).then((x) => {
+            return `${x}`;
+        });
+    }
+
+    async getNumber(
+        web3: Web3,
+        chain: string,
+        token: string,
+        key: string
+    ): Promise<number> {
+        return this.getString(web3, chain, token, key).then((s) =>
+            parseInt(s, 10)
+        );
+    }
+
+    _getDatabase(): Database {
+        return this.db;
     }
 }

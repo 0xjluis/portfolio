@@ -39,7 +39,7 @@ exports.__esModule = true;
 exports.getPortfolio = exports.readConfig = void 0;
 var fs = require("fs");
 var https = require("https");
-var decimals_1 = require("./decimals");
+var cache_1 = require("./cache");
 var help3_1 = require("./help3");
 // +------+
 // | HTTP |
@@ -73,11 +73,13 @@ function getPrice(chain, tokenAddress, currency) {
             chain = chain.toLowerCase();
             tokenAddress = tokenAddress.toLowerCase();
             url = "https://api.coingecko.com/api/v3/simple/token_price/".concat(chain, "?contract_addresses=").concat(tokenAddress, "&vs_currencies=").concat(currency);
-            return [2 /*return*/, request(url)
+            return [2 /*return*/, (request(url)
                     .then(function (x) { return JSON.parse(x.toString()); })
                     //eslint-disable-next-line @typescript-eslint/no-explicit-any
                     .then(function (value) {
-                    if (value && tokenAddress in value && currency in value[tokenAddress]) {
+                    if (value &&
+                        tokenAddress in value &&
+                        currency in value[tokenAddress]) {
                         return value[tokenAddress][currency];
                     }
                     var body = JSON.stringify(value);
@@ -86,7 +88,7 @@ function getPrice(chain, tokenAddress, currency) {
                 })["catch"](function (reason) {
                     console.error("ERR getPrice.request failed:", "url=".concat(url), "chain=".concat(chain), "token=".concat(tokenAddress), "currency=".concat(currency), "reason=".concat(reason));
                     return 0;
-                })];
+                }))];
         });
     });
 }
@@ -119,7 +121,7 @@ function getBalanceNorm(web3, chain, owner, tokenAddress) {
                         })];
                 case 1:
                     balance = _a.sent();
-                    decimals = new decimals_1["default"]();
+                    decimals = new cache_1["default"]();
                     return [4 /*yield*/, decimals.get(web3, chain, tokenAddress)];
                 case 2:
                     value = _a.sent();

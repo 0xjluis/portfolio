@@ -3,7 +3,7 @@ import * as https from "https";
 import Web3 from "web3";
 import { Contract } from "web3-eth-contract";
 import { IncomingMessage } from "http";
-import Decimals from "./decimals";
+import Cache from "./cache";
 import { makeWeb3, makeToken } from "./help3";
 import { Executor } from "./promises";
 
@@ -11,17 +11,34 @@ import { Executor } from "./promises";
 // | Interfaces |
 // +------------+
 
-interface TokenConfig {
+interface Token {
+    readonly chain: string;
+    readonly address: string;
+}
+
+interface TokenValue extends Token {
+    readonly value: number;
+}
+
+interface Transaction {
+    readonly bought: TokenValue;
+    readonly sold: TokenValue;
+    readonly fee?: TokenValue;
+}
+
+interface Entry extends Token {
+    readonly chain: string;
     readonly symbol: string;
     readonly address: string;
-    readonly invested: number;
+    readonly invested: number | Transaction[];
+
     readonly staked?: string;
     readonly initial?: number;
     readonly precision?: number;
 }
 
 interface WalletConfig {
-    [wallet: string]: readonly TokenConfig[];
+    [wallet: string]: readonly Entry[];
 }
 
 export interface Config {
@@ -77,29 +94,35 @@ async function getPrice(
 
     const url = `https://api.coingecko.com/api/v3/simple/token_price/${chain}?contract_addresses=${tokenAddress}&vs_currencies=${currency}`;
 
-    return request(url)
-        .then((x: Buffer) => JSON.parse(x.toString()))
-        //eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .then((value: any): number => {
-            if (value && tokenAddress in value && currency in value[tokenAddress]) {
-                return value[tokenAddress][currency];
-            }
-            const body = JSON.stringify(value);
-            const message = `bad response: body=${body}`;
-            throw new Error(message);
-        })
-        //eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .catch((reason: any): number => {
-            console.error(
-                `ERR getPrice.request failed:`,
-                `url=${url}`,
-                `chain=${chain}`,
-                `token=${tokenAddress}`,
-                `currency=${currency}`,
-                `reason=${reason}`
-            );
-            return 0;
-        })
+    return (
+        request(url)
+            .then((x: Buffer) => JSON.parse(x.toString()))
+            //eslint-disable-next-line @typescript-eslint/no-explicit-any
+            .then((value: any): number => {
+                if (
+                    value &&
+                    tokenAddress in value &&
+                    currency in value[tokenAddress]
+                ) {
+                    return value[tokenAddress][currency];
+                }
+                const body = JSON.stringify(value);
+                const message = `bad response: body=${body}`;
+                throw new Error(message);
+            })
+            //eslint-disable-next-line @typescript-eslint/no-explicit-any
+            .catch((reason: any): number => {
+                console.error(
+                    `ERR getPrice.request failed:`,
+                    `url=${url}`,
+                    `chain=${chain}`,
+                    `token=${tokenAddress}`,
+                    `currency=${currency}`,
+                    `reason=${reason}`
+                );
+                return 0;
+            })
+    );
 }
 
 // +------+
@@ -134,7 +157,7 @@ async function getBalanceNorm(
             return 0;
         });
 
-    const decimals = new Decimals();
+    const decimals = new Cache();
     const value = await decimals.get(web3, chain, tokenAddress);
     decimals.close(); // Not the smartest thing, but completely fine for now. :)
 
@@ -156,7 +179,7 @@ async function getBalance(
     web3: Web3,
     chain: string,
     owner: string,
-    token: TokenConfig
+    token: Entry
 ): Promise<Balance> {
     // If a token has a staked version, we'd like to use also that one.
     let balance: number = await getBalanceNorm(
@@ -211,7 +234,7 @@ export async function getPortfolio(config: Config): Promise<Balances> {
                     // For each token in this wallet, add a new promise to the `xs` array.
                     const tokenConfigs = walletConfig[wallet];
                     const f = async function (
-                        token: TokenConfig
+                        token: Entry
                     ): Promise<Balance> {
                         return getBalance(web3, chain, wallet, token);
                     };
