@@ -9,16 +9,18 @@ describe("getSimplePrice", function () {
         const bnbeth = await getSimplePrice("binance-smart-chain", "eth");
         const bnbusd = await getSimplePrice("binance-smart-chain");
         const ethusd = await getSimplePrice("ethereum");
-        expect(bnbeth * ethusd).to.be.approximately(bnbusd, 1e-2);
-    });
+        expect(bnbeth * ethusd).to.be.approximately(bnbusd, 5);
+    }).timeout(5000);
 });
 
 describe("getTokenPrice", function () {
     it("should fucking work", async function () {
-        const one = await getTokenPrice("ethereum", "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2", "eth");
-        expect(one).to.be.approximately(1, 1e-2);
+        const weth = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2";
+        const wetheth = await getTokenPrice("ethereum", weth, "eth");
+        expect(wetheth).to.be.approximately(1, 1e-2);
 
-        const two = await getTokenPrice("ethereum", "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2");
-        console.log("###", one, two);
-    });
+        const wethusd = await getTokenPrice("ethereum", weth);
+        const ethusd = await getSimplePrice("ethereum");
+        expect(wethusd).to.be.approximately(ethusd, 20);
+    }).timeout(5000);
 });

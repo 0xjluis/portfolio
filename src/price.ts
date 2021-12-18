@@ -1,13 +1,39 @@
 import * as https from "https";
 import { IncomingMessage } from "http";
-import { Executor } from "./promises";
 import Ajv, { JSONSchemaType } from "ajv";
+import { Executor } from "./promises";
+import { Chain } from "./chain";
 
-export type Chain =
-    | "avalanche"
-    | "binance-smart-chain"
-    | "ethereum"
-    | "polygon-pos";
+// +------+
+// | HTTP |
+// +------+
+
+function requestJSON(url: string): Promise<unknown> {
+    const f: Executor<unknown, void> = (resolve, reject) => {
+        const callback = (res: IncomingMessage): void => {
+            res.on("error", reject);
+            res.on("data", (buffer: Buffer): void => {
+                const content = buffer.toString();
+                let parsed: unknown;
+                try {
+                    parsed = JSON.parse(content);
+                } catch (e) {
+                    // if (e instanceof SyntaxError) {}
+                    reject(e);
+                }
+                resolve(parsed);
+            });
+        };
+        const req = https.request(url, callback);
+        req.on("error", reject);
+        req.end();
+    };
+    return new Promise(f);
+}
+
+// +-----------+
+// | Constants |
+// +-----------+
 
 type NativeToken = "avalanche-2" | "binancecoin" | "ethereum" | "matic-network";
 
@@ -22,102 +48,63 @@ const natives: ChainMapping<NativeToken> = {
     "polygon-pos": "matic-network",
 };
 
-function requestJSON(url: string): Promise<unknown> {
-    const f: Executor<unknown, void> = (resolve, reject) => {
-        const callback = (res: IncomingMessage): void => {
-            res.on("error", reject);
-            res.on("data", (buffer: Buffer): void => {
-                const content = buffer.toString();
-                let parsed: unknown;
-                try {
-                    parsed = JSON.parse(content);
-                } catch (e) {
-                    // if (e instanceof SyntaxError) {
-                    reject(e);
-                }
-                resolve(parsed);
-            });
-        };
-        const req = https.request(url, callback);
-        req.on("error", reject);
-        req.end();
-    };
-    return new Promise(f);
-}
-
 type VsCurrency = "btc" | "eth" | "usd";
 
-type SimplePricePayload = {
-    [key in VsCurrency]: number;
-};
+// +--------------+
+// | Simple price |
+// +--------------+
+
+// type SimplePricePayload = {
+//     [key in VsCurrency]: number;
+// };
 
 type SimplePrice = {
-    [token in NativeToken]: SimplePricePayload;
+    [token in NativeToken]: {
+        [key in VsCurrency]: number;
+    };
 };
 
 function isSimplePrice(x: unknown): x is SimplePrice {
-    const payload: JSONSchemaType<SimplePricePayload> = {
-        type: "object",
-        required: [],
-        oneOf: [
-            {
-                properties: {
-                    usd: { type: "number" },
-                },
-                required: ["usd"],
+    const prop = (key: string): object => {
+        return {
+            properties: {
+                [key]: { type: "number" },
             },
-            {
-                properties: {
-                    btc: { type: "number" },
-                },
-                required: ["btc"],
-            },
-            {
-                properties: {
-                    eth: { type: "number" },
-                },
-                required: ["eth"],
-            },
-        ],
+            required: [key],
+            additionalProperties: false,
+        };
     };
+
+    const payload = (key: string): object => {
+        return {
+            properties: {
+                [key]: {
+                    type: "object",
+                    required: [],
+                    oneOf: [prop("usd"), prop("btc"), prop("eth")],
+                },
+            },
+            required: [key],
+            additionalProperties: false,
+        };
+    };
+
     const schema: JSONSchemaType<SimplePrice> = {
         type: "object",
         required: [],
         oneOf: [
-            {
-                properties: {
-                    "avalanche-2": payload,
-                },
-                required: ["avalanche-2"],
-            },
-            {
-                properties: {
-                    binancecoin: payload,
-                },
-                required: ["binancecoin"],
-            },
-            {
-                properties: {
-                    ethereum: payload,
-                },
-                required: ["ethereum"],
-            },
-            {
-                properties: {
-                    "matic-network": payload,
-                },
-                required: ["matic-network"],
-            },
+            payload("avalanche"),
+            payload("binancecoin"),
+            payload("ethereum"),
+            payload("matic-network"),
         ],
     };
 
     const ajv = new Ajv({
-        strict: true,
-        allErrors: true,
+        strictRequired: true,
     });
-
-    const guard = ajv.compile(schema);
-    const check = guard(x);
+    const validate = ajv.compile(schema);
+    const check = validate(x);
 
     return check;
 }
@@ -135,8 +122,53 @@ export function getSimplePrice(
             return parsed[token][currency];
         }
         const resp = JSON.stringify(parsed);
-        throw new Error(`bad response: ${resp}`);
+        throw new Error(
+            `response does not conform to expected simple price scheme: ${resp}`
+        );
     });
+}
+
+// +-------------+
+// | Token price |
+// +-------------+
+
+type TokenPrice = {
+    [token: string]: {
+        [key in VsCurrency]: number;
+    };
+};
+
+function isTokenPrice(x: unknown, tokenAddress: string): x is TokenPrice {
+    const prop = (key: string): object => {
+        return {
+            properties: {
+                [key]: { type: "number" },
+            },
+            required: [key],
+            additionalProperties: false,
+        };
+    };
+
+    const schema: JSONSchemaType<TokenPrice> = {
+        type: "object",
+        properties: {
+            [tokenAddress]: {
+                type: "object",
+                required: [],
+                oneOf: [prop("usd"), prop("btc"), prop("eth")],
+            },
+        },
+        required: [],
+        additionalProperties: false,
+    };
+
+    const ajv = new Ajv({
+        strictRequired: true,
+    });
+    const validate = ajv.compile(schema);
+    const check = validate(x);
+
+    return check;
 }
 
 /**
@@ -149,52 +181,30 @@ export function getSimplePrice(
  * @returns
  */
 export function getTokenPrice(
-    chain: string,
+    chain: Chain,
     tokenAddress: string,
-    currency = "usd"
+    currency: VsCurrency = "usd"
 ): Promise<number> {
-    chain = chain.toLowerCase();
     tokenAddress = tokenAddress.toLowerCase();
-
     const url = `https://api.coingecko.com/api/v3/simple/token_price/${chain}?contract_addresses=${tokenAddress}&vs_currencies=${currency}`;
-
-    return (
-        requestJSON(url)
-            //eslint-disable-next-line @typescript-eslint/no-explicit-any
-            .then((value: any): number => {
-                // TODO: USE THE DAMN AJV LIBRARY!
-                if (
-                    value &&
-                    tokenAddress in value &&
-                    currency in value[tokenAddress]
-                ) {
-                    return value[tokenAddress][currency];
-                }
-                const body = JSON.stringify(value);
-                const message = `bad response: body=${body}`;
-                throw new Error(message);
-            })
-            //eslint-disable-next-line @typescript-eslint/no-explicit-any
-            .catch((reason: any): number => {
-                console.error(
-                    `ERR getPrice.request failed:`,
-                    `url=${url}`,
-                    `chain=${chain}`,
-                    `token=${tokenAddress}`,
-                    `currency=${currency}`,
-                    `reason=${reason}`
-                );
-                return 0;
-            })
-    );
+    return requestJSON(url).then((parsed: unknown): number => {
+        if (isTokenPrice(parsed, tokenAddress)) {
+            return parsed[tokenAddress][currency];
+        }
+        const resp = JSON.stringify(parsed);
+        throw new Error(
+            `response does not conform to expected token price scheme: ${resp}`
+        );
+    });
 }
 
 export default function getPrice(
-    chain: string,
+    chain: Chain,
     tokenAddress: string,
-    currency = "usd"
+    currency: VsCurrency = "usd"
 ): Promise<number> {
-    chain = chain.toLowerCase();
-    tokenAddress = tokenAddress.toLowerCase();
+    if (!tokenAddress) {
+        return getSimplePrice(chain, currency);
+    }
     return getTokenPrice(chain, tokenAddress, currency);
 }
