@@ -1,129 +1,10 @@
-import * as fs from "fs";
-import * as https from "https";
 import Web3 from "web3";
 import { Contract } from "web3-eth-contract";
-import { IncomingMessage } from "http";
+
 import Cache from "./cache";
+import { Entries, Entry } from "./entries";
 import { makeWeb3, makeToken } from "./help3";
-import { Executor } from "./promises";
-
-// +------------+
-// | Interfaces |
-// +------------+
-
-interface Token {
-    readonly chain: string;
-    readonly address: string;
-}
-
-interface TokenValue extends Token {
-    readonly value: number;
-}
-
-interface Transaction {
-    readonly bought: TokenValue;
-    readonly sold: TokenValue;
-    readonly fee?: TokenValue;
-}
-
-interface Entry extends Token {
-    readonly chain: string;
-    readonly symbol: string;
-    readonly address: string;
-    readonly invested: number | Transaction[];
-
-    readonly staked?: string;
-    readonly initial?: number;
-    readonly precision?: number;
-}
-
-interface WalletConfig {
-    [wallet: string]: readonly Entry[];
-}
-
-export interface Config {
-    [chain: string]: WalletConfig;
-}
-
-export interface Balance {
-    readonly chain: string;
-    readonly symbol: string;
-    readonly invested: number;
-    readonly initial: number;
-    readonly balance: number;
-    readonly price: number;
-    readonly notional: number;
-    readonly precision: number;
-}
-
-export type Balances = Balance[];
-
-// +------+
-// | HTTP |
-// +------+
-
-function request(url: string): Promise<Buffer> {
-    const f: Executor<Buffer, void> = (resolve, reject) => {
-        const callback = (res: IncomingMessage): void => {
-            res.on("data", resolve);
-            res.on("error", reject);
-        };
-        const req = https.request(url, callback);
-        req.on("error", reject);
-        req.end();
-    };
-    return new Promise(f);
-}
-
-/**
- * getPrice returns a token's price in the given target
- * currency. Performs a single request to CoinGecko's API.
- *
- * @param chain Which chain this token lives on.  Passed directly to CoinGecko's API.
- * @param tokenAddress Address of the token contract.
- * @param currency Currency of the price returned.  Again, passed directly to CoinGecko.
- * @returns
- */
-async function getPrice(
-    chain: string,
-    tokenAddress: string,
-    currency = "usd"
-): Promise<number> {
-    chain = chain.toLowerCase();
-    tokenAddress = tokenAddress.toLowerCase();
-
-    const url = `https://api.coingecko.com/api/v3/simple/token_price/${chain}?contract_addresses=${tokenAddress}&vs_currencies=${currency}`;
-
-    return (
-        request(url)
-            .then((x: Buffer) => JSON.parse(x.toString()))
-            //eslint-disable-next-line @typescript-eslint/no-explicit-any
-            .then((value: any): number => {
-                if (
-                    value &&
-                    tokenAddress in value &&
-                    currency in value[tokenAddress]
-                ) {
-                    return value[tokenAddress][currency];
-                }
-                const body = JSON.stringify(value);
-                const message = `bad response: body=${body}`;
-                throw new Error(message);
-            })
-            //eslint-disable-next-line @typescript-eslint/no-explicit-any
-            .catch((reason: any): number => {
-                console.error(
-                    `ERR getPrice.request failed:`,
-                    `url=${url}`,
-                    `chain=${chain}`,
-                    `token=${tokenAddress}`,
-                    `currency=${currency}`,
-                    `reason=${reason}`
-                );
-                return 0;
-            })
-    );
-}
+import getPrice from "./price";
 
 // +------+
 // | web3 |
@@ -157,11 +38,16 @@ async function getBalanceNorm(
             return 0;
         });
 
-    const decimals = new Cache();
-    const value = await decimals.get(web3, chain, tokenAddress);
-    decimals.close(); // Not the smartest thing, but completely fine for now. :)
+    const cache = new Cache();
+    const decimals = await cache.getNumber(
+        web3,
+        chain,
+        tokenAddress,
+        "decimals"
+    );
+    cache.close(); // Not the smartest thing, but completely fine for now. :)
 
-    const norm: number = balance / Math.pow(10, value);
+    const norm: number = balance / Math.pow(10, decimals);
     return norm;
 }
 
@@ -186,18 +72,23 @@ async function getBalance(
         web3,
         chain,
         owner,
-        token.address
+        token.tokenAddress
     );
-    if (token.staked) {
-        balance += await getBalanceNorm(web3, chain, owner, token.staked);
+    if (token.stakedAddress) {
+        balance += await getBalanceNorm(
+            web3,
+            chain,
+            owner,
+            token.stakedAddress
+        );
     }
-    const price = await getPrice(chain, token.address);
+    const price = await getPrice(chain, token.tokenAddress);
     const notional = balance * price;
 
     return {
         chain: chain,
         symbol: token.symbol,
-        invested: token.invested,
+        invested: 0, // token.invested,
         initial: token.initial || balance,
         balance: balance,
         price: price,
@@ -210,38 +101,37 @@ async function getBalance(
 // | Public |
 // +--------+
 
-export function readConfig(): Config {
-    const buf = fs.readFileSync("config.json", { encoding: "ascii" });
-    const obj = JSON.parse(buf.toString());
-    return obj;
+export interface Balance {
+    readonly chain: string;
+    readonly symbol: string;
+    readonly invested: number;
+    readonly initial: number;
+    readonly balance: number;
+    readonly price: number;
+    readonly notional: number;
+    readonly precision: number;
 }
 
-export async function getPortfolio(config: Config): Promise<Balances> {
+export type Balances = Balance[];
+
+export async function getPortfolio(
+    walletToEntries: Entries
+): Promise<Balances> {
     // An array of promises, which we later convert to a promise of an
     // array of all respective values evaluated.
     let xs: Promise<Balance>[] = new Array<Promise<Balance>>();
 
-    // For each chain.
-    for (const chain in config) {
-        if (Object.hasOwnProperty.call(config, chain)) {
-            const web3 = makeWeb3(chain);
-            const walletConfig = config[chain];
-            //
-            // For each wallet.
-            for (const wallet in walletConfig) {
-                if (Object.hasOwnProperty.call(walletConfig, wallet)) {
-                    //
-                    // For each token in this wallet, add a new promise to the `xs` array.
-                    const tokenConfigs = walletConfig[wallet];
-                    const f = async function (
-                        token: Entry
-                    ): Promise<Balance> {
-                        return getBalance(web3, chain, wallet, token);
-                    };
-                    const ys: Promise<Balance>[] = tokenConfigs.map(f);
-                    xs = xs.concat(ys);
-                }
-            }
+    // For each wallet.
+    for (const wallet in walletToEntries) {
+        if (Object.hasOwnProperty.call(walletToEntries, wallet)) {
+            const entries = walletToEntries[wallet];
+
+            const f = async function (entry: Entry): Promise<Balance> {
+                const web3 = makeWeb3(entry.chain);
+                return getBalance(web3, entry.chain, wallet, entry);
+            };
+            const ys: Promise<Balance>[] = entries.map(f);
+            xs = xs.concat(ys);
         }
     }
 

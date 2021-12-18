@@ -1,12 +1,14 @@
 import { config as dotenvConfig } from "dotenv";
-import { Balance, getPortfolio, readConfig } from "../src/portfolio";
+import { readEntries } from "../src/entries";
+import { Balance, getPortfolio } from "../src/portfolio";
+
 
 export async function main() {
     // Load .env.
     dotenvConfig();
 
     // Read configuration.
-    const config = readConfig();
+    const config = readEntries();
 
     // Fetch portfolio.
     const xs = await getPortfolio(config);

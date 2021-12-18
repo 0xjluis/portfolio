@@ -1,14 +1,14 @@
 import * as express from "express";
 import * as cors from "cors";
 import { config as dotenvConfig } from "dotenv";
-import { Config, getPortfolio, readConfig } from "./portfolio";
+import { Entries, getPortfolio, readEntries } from "./portfolio";
 
 async function handle(
     req: express.Request,
     res: express.Response
 ): Promise<void> {
-    const config: Config = req.body ? req.body : readConfig();
-    const balances = await getPortfolio(config);
+    const entries: Entries = req.body ? req.body : readEntries();
+    const balances = await getPortfolio(entries);
     res.send(balances);
     res.end();
 }

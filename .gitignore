@@ -128,3 +128,4 @@ dist
 # ydm
 .env
 config.json
+entries.json

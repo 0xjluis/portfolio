@@ -57,6 +57,8 @@ function promisedCallback(
     };
 }
 
+type Column = "decimals" | "symbol";
+
 /**
  * Database is created on construction, close() should be called
  * explicitly.
@@ -114,9 +116,9 @@ export default class Cache {
     private async select<T>(
         chain: string,
         token: string,
-        key: string
+        column: string
     ): Promise<T> {
-        const select = `SELECT "${key}" FROM "cache" WHERE "chain" = ? AND "token" = ?;`;
+        const select = `SELECT "${column}" FROM "cache" WHERE "chain" = ? AND "token" = ?;`;
         //eslint-disable-next-line @typescript-eslint/no-explicit-any
         const executor: Executor<any, void> = (resolve, reject) => {
             this.db.serialize(() => {
@@ -130,8 +132,8 @@ export default class Cache {
         };
         //eslint-disable-next-line @typescript-eslint/no-explicit-any
         return new Promise(executor).then((row: any): T => {
-            if (key in row) {
-                return row[key];
+            if (column in row) {
+                return row[column];
             }
             throw new UndefinedRow("TODO?");
         });
@@ -172,12 +174,12 @@ export default class Cache {
         web3: Web3,
         chain: string,
         token: string,
-        key: string
+        column: Column
     ): Promise<unknown> {
         token = token.toLowerCase();
 
         try {
-            return await this.select(chain, token, key);
+            return await this.select(chain, token, column);
         } catch (e) {
             if (!(e instanceof UndefinedRow)) {
                 // Unrecognized error type.
@@ -192,7 +194,7 @@ export default class Cache {
             await this.insert(chain, token, { decimals, symbol });
 
             // Try again.  If it fails, it fails.
-            return await this.select(chain, token, key);
+            return await this.select(chain, token, column);
         }
     }
 
@@ -200,9 +202,9 @@ export default class Cache {
         web3: Web3,
         chain: string,
         token: string,
-        key: string
+        column: Column
     ): Promise<string> {
-        return this.get(web3, chain, token, key).then((x) => {
+        return this.get(web3, chain, token, column).then((x) => {
             return `${x}`;
         });
     }
@@ -211,9 +213,9 @@ export default class Cache {
         web3: Web3,
         chain: string,
         token: string,
-        key: string
+        column: Column
     ): Promise<number> {
-        return this.getString(web3, chain, token, key).then((s) =>
+        return this.getString(web3, chain, token, column).then((s) =>
             parseInt(s, 10)
         );
     }
