@@ -1,15 +1,20 @@
 import * as express from "express";
 import * as cors from "cors";
 import { config as dotenvConfig } from "dotenv";
-import { Entries, getPortfolio, readEntries } from "./portfolio";
+import { getBalances } from "./portfolio";
+import { Wallets, isWallets } from "./wallets";
 
 async function handle(
     req: express.Request,
     res: express.Response
 ): Promise<void> {
-    const entries: Entries = req.body ? req.body : readEntries();
-    const balances = await getPortfolio(entries);
-    res.send(balances);
+    const wallets: Wallets = req.body;
+    if (!isWallets(wallets)) {
+        res.send({error: "bad input"});
+    } else {
+        const balances = await getBalances(wallets);
+        res.send(balances);
+    }
     res.end();
 }
 

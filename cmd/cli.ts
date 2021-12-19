@@ -1,6 +1,5 @@
 import { config as dotenvConfig } from "dotenv";
-import { readWallets } from "../src/entries";
-import { makeWeb3 } from "../src/help3";
+import { readWallets } from "../src/wallets";
 import { Balance, getBalances } from "../src/portfolio";
 
 

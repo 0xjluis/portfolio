@@ -3,7 +3,7 @@ import { Contract } from "web3-eth-contract";
 
 import Cache from "./cache";
 import { Chain } from "./chain";
-import { Wallets, Entry, Transaction, Transactions } from "./entries";
+import { Wallets, Entry, Transaction, Transactions } from "./wallets";
 import { makeWeb3, makeToken, getBalanceOHM } from "./help3";
 import getPrice, { VsCurrency } from "./price";
 
@@ -65,7 +65,8 @@ async function getCost(
     const native = await getPrice(chain, "native", currency);
 
     let cost = 0;
-    for await (const tx of txs) {
+    for (let index = 0; index < txs.length; index++) {
+        const tx = txs[index];
         const price = await getPrice(chain, tx.amountOut.tokenAddress, currency);
         cost += tx.amountOut.value * price;
         cost += tx.fee * native;

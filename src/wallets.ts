@@ -78,19 +78,26 @@ function isEntry(x: unknown): x is Entry {
     return check;
 }
 
-export function readWallets(path = "wallets.json"): Wallets {
-    const content = fs.readFileSync(path, { encoding: "ascii" });
-    const walletEntries = JSON.parse(content);
-    for (const wallet in walletEntries) {
-        if (Object.prototype.hasOwnProperty.call(walletEntries, wallet)) {
-            const entries = walletEntries[wallet];
-            entries.forEach((element: unknown): void => {
+export function isWallets(x: Wallets): x is Wallets {
+    for (const wallet in x) {
+        if (Object.prototype.hasOwnProperty.call(x, wallet)) {
+            const entries = x[wallet];
+            for (let index = 0; index < entries.length; index++) {
+                const element = entries[index];
                 if (!isEntry(element)) {
-                    const resp = JSON.stringify(element);
-                    throw new Error(`element is not an Entry: ${resp}`);
+                    return false;
                 }
-            });
+            }
         }
     }
-    return walletEntries;
+    return true;
+}
+
+export function readWallets(path = "wallets.json"): Wallets {
+    const content = fs.readFileSync(path, { encoding: "ascii" });
+    const wallets = JSON.parse(content);
+    if (!isWallets(wallets)) {
+        throw new Error(`element is not an Entry: content`);
+    }
+    return wallets;
 }
