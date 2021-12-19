@@ -48,7 +48,7 @@ const natives: ChainMapping<NativeToken> = {
     "polygon-pos": "matic-network",
 };
 
-type VsCurrency = "btc" | "eth" | "usd";
+export type VsCurrency = "btc" | "eth" | "usd";
 
 // +--------------+
 // | Simple price |
@@ -93,7 +93,7 @@ function isSimplePrice(x: unknown): x is SimplePrice {
         type: "object",
         required: [],
         oneOf: [
-            payload("avalanche"),
+            payload("avalanche-2"),
             payload("binancecoin"),
             payload("ethereum"),
             payload("matic-network"),
@@ -200,10 +200,10 @@ export function getTokenPrice(
 
 export default function getPrice(
     chain: Chain,
-    tokenAddress: string,
+    tokenAddress = "native",
     currency: VsCurrency = "usd"
 ): Promise<number> {
-    if (!tokenAddress) {
+    if (!tokenAddress || tokenAddress === "native") {
         return getSimplePrice(chain, currency);
     }
     return getTokenPrice(chain, tokenAddress, currency);

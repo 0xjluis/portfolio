@@ -1,79 +1,70 @@
-import { JSONSchemaType } from "ajv";
 import * as fs from "fs";
+import Ajv, { JSONSchemaType } from "ajv";
+import { Chain } from "./chain";
 
-interface Token {
-    readonly chain: string;
-    readonly tokenAddress?: string;
-}
-
-interface TokenValue extends Token {
+interface TokenValue {
+    readonly tokenAddress: string;
+    readonly symbol: string;
     readonly value: number;
 }
 
-interface Transaction {
-    readonly payed: TokenValue;
-    readonly fee?: TokenValue;
+export interface Transaction {
+    readonly amountIn: number;
+    readonly amountOut: TokenValue;
+    readonly fee: number;
 }
 
-export interface Entry extends Token {
-    readonly symbol?: string;
-    readonly invested?: number | Transaction[];
+export type Transactions = Transaction[];
 
+export interface Entry {
+    readonly chain: Chain;
+    readonly tokenAddress: string;
+    readonly symbol: string;
+    readonly transactions: Transactions;
     readonly stakedAddress?: string;
-    readonly initial?: number;
     readonly precision?: number;
 }
 
-export interface Entries {
+export interface Wallets {
     [wallet: string]: readonly Entry[];
 }
 
-function checkEntry(x: unknown): x is Entry {
-    const tokenValueSchema: JSONSchemaType<{
-        chain?: string;
-        tokenAddress?: string;
-        value: number;
-    }> = {
-        $schema: "https://json-schema.org/draft/2020-12/schema",
-        $id: "https://example.com/product.schema.json",
+function isEntry(x: unknown): x is Entry {
+    const tokenValueSchema: JSONSchemaType<TokenValue> = {
         type: "object",
         properties: {
-            chain: { type: "string" },
+            symbol: { type: "string" },
             tokenAddress: { type: "string" },
             value: { type: "number" },
         },
-        required: ["value"],
+        required: ["symbol", "tokenAddress", "value"],
+        additionalProperties: false,
     };
     const transactionSchema: JSONSchemaType<Transaction> = {
-        $schema: "https://json-schema.org/draft/2020-12/schema",
-        $id: "https://example.com/product.schema.json",
         type: "object",
         properties: {
-            payed: tokenValueSchema,
-            fee: tokenValueSchema,
+            amountOut: tokenValueSchema,
+            amountIn: { type: "number" },
+            fee: { type: "number" },
         },
-        required: ["payed"],
+        required: ["amountOut", "amountIn", "fee"],
+        additionalProperties: false,
     };
-    const schema: JSONSchemaType<Entry> = {
-        $schema: "https://json-schema.org/draft/2020-12/schema",
-        $id: "https://example.com/product.schema.json",
+    const transactionsSchema: JSONSchemaType<Transactions> = {
+        type: "array",
+        items: transactionSchema,
+    };
+    const entrySchema: JSONSchemaType<Entry> = {
         type: "object",
         properties: {
             chain: { type: "string" },
-            tokenAddress: { type: "string" },
             symbol: { type: "string" },
-            invested: {
-                oneOf: [
-                    {
-                        type: "number",
-                    },
-                    {
-                        type: "array",
-                        items: transactionSchema,
-                    },
-                ],
-            },
+            tokenAddress: { type: "string" },
+            transactions: transactionsSchema,
+            stakedAddress: { type: "string", nullable: true },
+            precision: { type: "number", nullable: true },
         },
+        required: ["chain", "symbol", "tokenAddress", "transactions"],
     };
 
     const ajv = new Ajv({
@@ -81,28 +72,25 @@ function checkEntry(x: unknown): x is Entry {
         allErrors: true,
     });
 
-    const guard = ajv.compile(schema);
+    const guard = ajv.compile(entrySchema);
     const check = guard(x);
 
     return check;
 }
 
-export function readEntries(path = "entries.json"): Entries {
+export function readWallets(path = "wallets.json"): Wallets {
     const content = fs.readFileSync(path, { encoding: "ascii" });
     const walletEntries = JSON.parse(content);
-    console.log(walletEntries);
     for (const wallet in walletEntries) {
         if (Object.prototype.hasOwnProperty.call(walletEntries, wallet)) {
             const entries = walletEntries[wallet];
-            entries.map(checkEntry);
-            // entries.forEach((entry: Entry) => {
-            //     checkEntry(entry);
-            //     if (!isEntry(entry)) {
-            //         const repr = JSON.stringify(entry);
-            //         throw new Error(`not a valid entry: ${repr}`);
-            //     }
-            // });
+            entries.forEach((element: unknown): void => {
+                if (!isEntry(element)) {
+                    const resp = JSON.stringify(element);
+                    throw new Error(`element is not an Entry: ${resp}`);
+                }
+            });
         }
     }
-    throw new Error("TODO");
+    return walletEntries;
 }

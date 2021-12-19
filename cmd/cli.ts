@@ -1,6 +1,7 @@
 import { config as dotenvConfig } from "dotenv";
-import { readEntries } from "../src/entries";
-import { Balance, getPortfolio } from "../src/portfolio";
+import { readWallets } from "../src/entries";
+import { makeWeb3 } from "../src/help3";
+import { Balance, getBalances } from "../src/portfolio";
 
 
 export async function main() {
@@ -8,10 +9,10 @@ export async function main() {
     dotenvConfig();
 
     // Read configuration.
-    const config = readEntries();
+    const wallets = readWallets();
 
     // Fetch portfolio.
-    const xs = await getPortfolio(config);
+    const xs = await getBalances(wallets);
 
     // Prepare the portfolio to be pretty-printed and sum a few totals
     // in the same time.
@@ -32,33 +33,30 @@ export async function main() {
 
     interface PrettyRow {
         Symbol: string,
-        Quantity: number,
         Rewards: number,
+        Quantity: number,
         Price: string,
+        Cost: string,
         Value: string,
-        Invested: string,
         PNL: string,
         ROI: string,
     }
 
     const pretty = (element: Balance): PrettyRow => {
-        const pnl = round(element.notional - element.invested, 1);
-        const roi = round((100 * pnl) / element.invested, 1);
+        const pnl = round(element.notionalValue - element.cost, 1);
+        const roi = round((100 * pnl) / element.cost, 1);
 
-        totalValue += element.notional;
-        totalInvested += element.invested;
+        totalValue += element.notionalValue;
+        totalInvested += element.cost;
         totalPNL += pnl;
 
         return {
             Symbol: element.symbol,
-            Quantity: round(element.balance, element.precision),
-            Rewards: round(
-                element.balance - element.initial,
-                element.precision
-            ),
-            Price: fmt(element.price, 1),
-            Value: fmt(element.notional, 1),
-            Invested: fmt(element.invested, 1),
+            Rewards: round(element.rewardedBalance, element.precision),
+            Quantity: round(element.currentBalance, element.precision),
+            Price: fmt(element.currentPrice, 1),
+            Cost: fmt(element.cost, 1),
+            Value: fmt(element.notionalValue, 1),
             PNL: fmt(pnl, 1),
             ROI: `${roi}%`,
         };

@@ -2,13 +2,14 @@ import Web3 from "web3";
 import { Contract } from "web3-eth-contract";
 
 import Cache from "./cache";
-import { Entries, Entry } from "./entries";
-import { makeWeb3, makeToken } from "./help3";
-import getPrice from "./price";
+import { Chain } from "./chain";
+import { Wallets, Entry, Transaction, Transactions } from "./entries";
+import { makeWeb3, makeToken, getBalanceOHM } from "./help3";
+import getPrice, { VsCurrency } from "./price";
 
-// +------+
-// | web3 |
-// +------+
+// +---------+
+// | Balance |
+// +---------+
 
 /**
  * getBalanceNorm returns the normalized (balance/10^decimals)
@@ -21,16 +22,20 @@ import getPrice from "./price";
  */
 async function getBalanceNorm(
     web3: Web3,
-    chain: string,
+    chain: Chain,
     owner: string,
-    tokenAddress: string
+    tokenAddress: string,
 ): Promise<number> {
+    // OHM on Ethereum is a special fucking case.
+    if (tokenAddress === "0x383518188c0c6d7730d91b2c03a03c837814a899") {
+        return getBalanceOHM(web3, owner);
+    }
+
     const contract: Contract = makeToken(web3, tokenAddress);
     const balance: number = await contract.methods
         .balanceOf(owner)
         .call()
-        //eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .catch((error?: any) => {
+        .catch((error?: unknown) => {
             const provider = web3.currentProvider?.toString() || "";
             console.error(
                 `balanceOf failed: provider=${provider} owner=${owner} token=${tokenAddress} error=${error}`
@@ -45,11 +50,44 @@ async function getBalanceNorm(
         tokenAddress,
         "decimals"
     );
-    cache.close(); // Not the smartest thing, but completely fine for now. :)
+    cache.close(); // Not the smartest thing to do, but completely fine for now. :)
 
-    const norm: number = balance / Math.pow(10, decimals);
+    const norm = balance / Math.pow(10, decimals);
     return norm;
 }
+
+async function getCost(
+    web3: Web3,
+    chain: Chain,
+    txs: Transactions,
+    currency: VsCurrency = "usd",
+): Promise<number> {
+    const native = await getPrice(chain, "native", currency);
+
+    let cost = 0;
+    for await (const tx of txs) {
+        const price = await getPrice(chain, tx.amountOut.tokenAddress, currency);
+        cost += tx.amountOut.value * price;
+        cost += tx.fee * native;
+    }
+
+    return cost;
+}
+
+export interface Balance {
+    readonly chain: Chain;
+    readonly tokenAddress: string;
+    readonly symbol: string;
+    readonly cost: number;
+    readonly initialBalance: number;
+    readonly currentBalance: number;
+    readonly rewardedBalance: number;
+    readonly currentPrice: number;
+    readonly notionalValue: number;
+    readonly precision: number;
+}
+
+export type Balances = Balance[];
 
 /**
  * getBalance returns the staked + unstaked (normalized) balance of an
@@ -61,81 +99,67 @@ async function getBalanceNorm(
  * @param token
  * @returns
  */
-async function getBalance(
+export async function getBalance(
     web3: Web3,
-    chain: string,
+    chain: Chain,
     owner: string,
-    token: Entry
+    entry: Entry,
+    currency: VsCurrency = "usd",
 ): Promise<Balance> {
+    //const cache = new Cache();
+    const cost = await getCost(web3, chain, entry.transactions, currency);
+
+    let initialBalance = 0;
+    entry.transactions.forEach((tx: Transaction) => {
+        initialBalance += tx.amountIn;
+    });
+
     // If a token has a staked version, we'd like to use also that one.
-    let balance: number = await getBalanceNorm(
+    let currentBalance: number = await getBalanceNorm(
         web3,
         chain,
         owner,
-        token.tokenAddress
+        entry.tokenAddress
     );
-    if (token.stakedAddress) {
-        balance += await getBalanceNorm(
+    if (entry.stakedAddress) {
+        currentBalance += await getBalanceNorm(
             web3,
             chain,
             owner,
-            token.stakedAddress
+            entry.stakedAddress
         );
     }
-    const price = await getPrice(chain, token.tokenAddress);
-    const notional = balance * price;
+    const currentPrice = await getPrice(chain, entry.tokenAddress);
+    const notionalValue = currentBalance * currentPrice;
 
     return {
         chain: chain,
-        symbol: token.symbol,
-        invested: 0, // token.invested,
-        initial: token.initial || balance,
-        balance: balance,
-        price: price,
-        notional: notional,
-        precision: token.precision || 2,
-    };
+        tokenAddress: entry.tokenAddress,
+        symbol: entry.symbol,
+        cost: cost,
+        initialBalance: initialBalance,
+        currentBalance: currentBalance,
+        rewardedBalance: (currentBalance - initialBalance),
+        currentPrice: currentPrice,
+        notionalValue: notionalValue,
+        precision: entry.precision || 2,
+    }
 }
 
-// +--------+
-// | Public |
-// +--------+
-
-export interface Balance {
-    readonly chain: string;
-    readonly symbol: string;
-    readonly invested: number;
-    readonly initial: number;
-    readonly balance: number;
-    readonly price: number;
-    readonly notional: number;
-    readonly precision: number;
-}
-
-export type Balances = Balance[];
-
-export async function getPortfolio(
-    walletToEntries: Entries
-): Promise<Balances> {
-    // An array of promises, which we later convert to a promise of an
-    // array of all respective values evaluated.
+export async function getBalances(wallets: Wallets): Promise<Balances> {
     let xs: Promise<Balance>[] = new Array<Promise<Balance>>();
 
-    // For each wallet.
-    for (const wallet in walletToEntries) {
-        if (Object.hasOwnProperty.call(walletToEntries, wallet)) {
-            const entries = walletToEntries[wallet];
-
+    for (const wallet in wallets) {
+        if (Object.hasOwnProperty.call(wallets, wallet)) {
             const f = async function (entry: Entry): Promise<Balance> {
                 const web3 = makeWeb3(entry.chain);
                 return getBalance(web3, entry.chain, wallet, entry);
             };
+            const entries = wallets[wallet];
             const ys: Promise<Balance>[] = entries.map(f);
             xs = xs.concat(ys);
         }
     }
 
-    // Finally, convert `xs`, which is an array of promises, to a
-    // promise of an array with all the values resolved.
     return Promise.all(xs);
 }
