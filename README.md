@@ -4,49 +4,78 @@ Track your Ethereum/web3 portfolio.
 
 ### Usage
 
-1. Adapt `config.json` to your portfolio.  Valid chain keys are listed [here](https://api.coingecko.com/api/v3/asset_platforms).
+1. Add `wallets.json` to your root directory.  Valid chain keys are listed [here](https://api.coingecko.com/api/v3/asset_platforms).
 
 ```JSON
 {
-    "ethereum": {
-        "0xWALLET_ONE": [
-            {
-                "symbol": "COMP",
-                "address": "0xc00e94Cb662C3520282E6f5717214004A7f26888",
-                "invested": 10000,
-                "precision": 5
-            }
-        ],
-
-        "0xWALLET_TWO": [
-            {
-                "symbol": "OHM",
-                "address": "0x383518188c0c6d7730d91b2c03a03c837814a899",
-                "invested": 20000,
-                "staked": "0x04f2694c8fcee23e8fd0dfea1d4f5bb8c352111f",
-                "initial": 30,
-                "precision": 1
-            }
-        ]
-    },
-
-    "avalanche": {
-        "0xWALLET_THREE": [
-            {
-                "symbol": "WAVAX",
-                "address": "0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7",
-                "invested": 30000
-            }
-        ]
-    },
-
-    "binance-smart-chain": {
-        "0xWALLET_FOUR": []
-    },
-
-    "polygon-pos": {
-        "0xWALLET_FIVE": []
-    }
+    "WALLET_ONE_E_G_0x220866b1a2219f40e72f5c628b65d54268ca3a9d": [
+        {
+            "chain": "ethereum",
+            "symbol": "XDEFI",
+            "tokenAddress": "0x72b886d09c117654ab7da13a14d603001de0b777",
+            "transactions": [
+                {
+                    "amountOut": {
+                        "symbol": "WETH",
+                        "tokenAddress": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+                        "value": 1.5
+                    },
+                    "amountIn": 5000,
+                    "fee": 0.005
+                }
+            ],
+            "precision": 0
+        },
+        {
+            "chain": "ethereum",
+            "symbol": "SQUID",
+            "tokenAddress": "0x21ad647b8f4fe333212e735bfc1f36b4941e6ad2",
+            "transactions": [
+                {
+                    "amountOut": {
+                        "symbol": "WETH",
+                        "tokenAddress": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+                        "value": 100
+                    },
+                    "amountIn": 1
+                    "fee": 0.005
+                },
+                {
+                    "amountOut": {
+                        "symbol": "WETH",
+                        "tokenAddress": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+                        "value": 200
+                    },
+                    "amountIn": 2,
+                    "fee": 0.005
+                }
+            ],
+            "stakedAddress": "0x9d49bfc921f36448234b0efa67b5f91b3c691515",
+            "precision": 6
+        },
+        {
+            "chain": "polygon-pos",
+            "symbol": "KLIMA",
+            "tokenAddress": "0x4e78011ce80ee02d2c3e649fb657e45898257815",
+            "transactions": [
+                {
+                    "amountOut": {
+                        "symbol": "WETH",
+                        "tokenAddress": "0x7ceb23fd6bc0add59e62ac25578270cff1b9f619",
+                        "value": 10
+                    },
+                    "amountIn": 70,
+                    "fee": 0.005
+                }
+            ],
+            "stakedAddress": "0xb0C22d8D350C67420f06F48936654f567C73E8C8"
+        }
+    ],
+    "WALLET_TWO": [
+        {
+            ...
+        }
+    ]
 }
 ```
 
@@ -57,5 +86,6 @@ WEB3_INFURA_PROJECT_ID=...
 
 3. Start.
 ```bash
-$ npm run start
+$ yarn install
+$ yarn run cli
 ```
