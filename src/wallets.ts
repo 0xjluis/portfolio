@@ -23,10 +23,12 @@ export interface Entry {
     readonly transactions: Transactions;
     readonly stakedAddress?: string;
     readonly precision?: number;
+    readonly weight?: number;
 }
 
 export interface Wallets {
     [wallet: string]: readonly Entry[];
+    // "profits": number[];
 }
 
 function isEntry(x: unknown): x is Entry {
@@ -63,6 +65,7 @@ function isEntry(x: unknown): x is Entry {
             transactions: transactionsSchema,
             stakedAddress: { type: "string", nullable: true },
             precision: { type: "number", nullable: true },
+            weight: {type: "number", nullable: true},
         },
         required: ["chain", "symbol", "tokenAddress", "transactions"],
     };
@@ -81,6 +84,19 @@ function isEntry(x: unknown): x is Entry {
 export function isWallets(x: Wallets): x is Wallets {
     for (const wallet in x) {
         if (Object.prototype.hasOwnProperty.call(x, wallet)) {
+            // if (wallet === "profits") {
+            //     // "profits" should be an array of numbers.
+            //     const profits = x[wallet];
+            //     if (!Array.isArray(profits)) {
+            //         return false;
+            //     }
+            //     for (let index = 0; index < profits.length; index++) {
+            //         const element = profits[index];
+            //         if (typeof element !== "number") {
+            //             return false;
+            //         }
+            //     }
+            // } else { ... }
             const entries = x[wallet];
             for (let index = 0; index < entries.length; index++) {
                 const element = entries[index];

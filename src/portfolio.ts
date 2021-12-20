@@ -107,13 +107,14 @@ export async function getBalance(
     entry: Entry,
     currency: VsCurrency = "usd",
 ): Promise<Balance> {
-    //const cache = new Cache();
-    const cost = await getCost(web3, chain, entry.transactions, currency);
+    const weight = entry.weight || 1;
+    const cost = await getCost(web3, chain, entry.transactions, currency) * weight;
 
     let initialBalance = 0;
     entry.transactions.forEach((tx: Transaction) => {
         initialBalance += tx.amountIn;
     });
+    initialBalance *= weight;
 
     // If a token has a staked version, we'd like to use also that one.
     let currentBalance: number = await getBalanceNorm(
@@ -130,6 +131,7 @@ export async function getBalance(
             entry.stakedAddress
         );
     }
+    currentBalance *= weight;
     const currentPrice = await getPrice(chain, entry.tokenAddress);
     const notionalValue = currentBalance * currentPrice;
 
