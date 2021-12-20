@@ -10,12 +10,14 @@ async function handle(
 ): Promise<void> {
     const wallets: Wallets = req.body;
     if (!isWallets(wallets)) {
-        res.send({error: "bad input"});
+        res.send({ error: "bad input" });
+        res.end();
     } else {
-        const balances = await getBalances(wallets);
-        res.send(balances);
+        getBalances(wallets)
+            .then((balances) => res.send(balances))
+            .catch(console.error)
+            .finally(() => res.end());
     }
-    res.end();
 }
 
 function main() {
@@ -29,7 +31,6 @@ function main() {
     app.use(express.json()); // Parse JSON bodies.
 
     // Attach handlers.
-    app.get("/", handle);
     app.post("/", handle);
 
     // Start server.
