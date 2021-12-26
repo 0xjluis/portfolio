@@ -145,7 +145,7 @@ export async function getBalance(
         rewardedBalance: (currentBalance - initialBalance),
         currentPrice: currentPrice,
         notionalValue: notionalValue,
-        precision: entry.precision || 2,
+        precision: (entry.precision != null) ? entry.precision : 2,
     }
 }
 
