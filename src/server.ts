@@ -1,7 +1,7 @@
 import * as express from "express";
 import * as cors from "cors";
 import { config as dotenvConfig } from "dotenv";
-import { getBalances } from "./portfolio";
+import { Balances, getBalances } from "./portfolio";
 import { Wallets, isWallets } from "./wallets";
 
 async function handle(
@@ -14,7 +14,7 @@ async function handle(
         res.end();
     } else {
         getBalances(wallets)
-            .then((balances) => res.send(balances))
+            .then((balances: Balances) => res.send(balances))
             .catch(console.error)
             .finally(() => res.end());
     }
