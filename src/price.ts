@@ -35,7 +35,7 @@ function requestJSON(url: string): Promise<unknown> {
 // | Constants |
 // +-----------+
 
-type NativeToken = "avalanche-2" | "binancecoin" | "ethereum" | "matic-network";
+type NativeToken = "avalanche-2" | "binancecoin" | "ethereum" | "matic-network" | "fantom";
 
 type ChainMapping<T> = {
     [chain in Chain]: T;
@@ -46,6 +46,7 @@ const natives: ChainMapping<NativeToken> = {
     ethereum: "ethereum",
     "binance-smart-chain": "binancecoin",
     "polygon-pos": "matic-network",
+    fantom: "fantom",
 };
 
 export type VsCurrency = "btc" | "eth" | "usd";
@@ -97,6 +98,7 @@ function isSimplePrice(x: unknown): x is SimplePrice {
             payload("binancecoin"),
             payload("ethereum"),
             payload("matic-network"),
+            payload("fantom"),
         ],
     };
 

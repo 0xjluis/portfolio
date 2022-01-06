@@ -1,1 +1,1 @@
-export type Chain = "avalanche" | "binance-smart-chain" | "ethereum" | "polygon-pos";
+export type Chain = "avalanche" | "binance-smart-chain" | "ethereum" | "fantom" | "polygon-pos";

@@ -29,6 +29,9 @@ export function makeWeb3(chain: Chain): Web3 {
         case "ethereum":
             provider = `https://mainnet.infura.io/v3/${id}`;
             break;
+        case "fantom":
+            provider = "https://rpcapi.fantom.network";
+            break;
         case "polygon-pos":
             provider = `https://polygon-mainnet.infura.io/v3/${id}`;
             break;
@@ -102,10 +105,10 @@ export async function getBalanceOHM(
         "0x0ab87046fBb341D058F17CBC4c1133F25a20a52f"
     );
     const f = (x: unknown) => parseInt(`${x}`, 10);
-    
+
     const ratio9 = await gOHM.methods.balanceTo(1).call().then(f);
     const ratio = ratio9 / Math.pow(10, 9);
-    
+
     const balance18 = await gOHM.methods.balanceOf(owner).call().then(f);
     const balance = balance18 / Math.pow(10, 18);
 
