@@ -190,7 +190,7 @@ export function getTokenPrice(
     tokenAddress = tokenAddress.toLowerCase();
     const url = `https://api.coingecko.com/api/v3/simple/token_price/${chain}?contract_addresses=${tokenAddress}&vs_currencies=${currency}`;
     return requestJSON(url).then((parsed: unknown): number => {
-        if (isTokenPrice(parsed, tokenAddress)) {
+        if (isTokenPrice(parsed, tokenAddress) && tokenAddress in parsed) {
             return parsed[tokenAddress][currency];
         }
         const resp = JSON.stringify(parsed);

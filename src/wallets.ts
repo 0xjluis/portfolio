@@ -65,7 +65,7 @@ function isEntry(x: unknown): x is Entry {
             transactions: transactionsSchema,
             stakedAddress: { type: "string", nullable: true },
             precision: { type: "number", nullable: true },
-            weight: {type: "number", nullable: true},
+            weight: { type: "number", nullable: true },
         },
         required: ["chain", "symbol", "tokenAddress", "transactions"],
     };
