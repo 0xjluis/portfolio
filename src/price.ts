@@ -195,7 +195,7 @@ export function getTokenPrice(
         }
         const resp = JSON.stringify(parsed);
         throw new Error(
-            `response does not conform to expected token price scheme: ${resp}`
+            `response does not conform to expected token price scheme: ${resp}, url=${url}`
         );
     });
 }
