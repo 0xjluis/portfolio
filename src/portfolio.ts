@@ -27,7 +27,7 @@ async function getBalanceNorm(
     tokenAddress: string,
 ): Promise<number> {
     // OHM on Ethereum is a special fucking case.
-    if (chain === "ethereum" && tokenAddress === "0x383518188c0c6d7730d91b2c03a03c837814a899") {
+    if (chain === "ethereum" && tokenAddress === "0x64aa3364f17a4d01c6f1751fd97c2bd3d7e7f1d5") {
         return getBalanceOHM(web3, owner);
     }
 
